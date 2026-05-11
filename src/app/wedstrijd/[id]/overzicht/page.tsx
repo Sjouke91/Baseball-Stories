@@ -122,14 +122,14 @@ export default function GameOverviewPage() {
     return {
       innings,
       opponentInnings,
-      runs: progress?.scoreFor ?? game.finalScoreFor ?? 0,
-      opponentRuns: progress?.scoreAgainst ?? game.finalScoreAgainst ?? 0,
+      runs: progress?.scoreFor ?? game?.finalScoreFor ?? 0,
+      opponentRuns: progress?.scoreAgainst ?? game?.finalScoreAgainst ?? 0,
       hits,
       errors: opponentErrors,
     };
   }, [
-    game.finalScoreAgainst,
-    game.finalScoreFor,
+    game?.finalScoreAgainst,
+    game?.finalScoreFor,
     gamePlays,
     inningRuns,
     opponentInningRuns,
