@@ -7,6 +7,10 @@ import type { AppData, Play, PlayResult, Player } from '@/types/models';
 const hitResults: PlayResult[] = ['1B', '2B', '3B', 'HR'];
 const abResults: PlayResult[] = ['1B', '2B', '3B', 'HR', 'K', 'OUT', 'E', 'FC'];
 
+export const isMatchEventType = (type: AppData['events'][number]['type']) => {
+  return type.includes('wedstrijd');
+};
+
 export const sortedEvents = (data: Pick<AppData, 'events'>) => {
   return [...data.events].sort((a, b) =>
     compareAsc(parseISO(a.date), parseISO(b.date)),

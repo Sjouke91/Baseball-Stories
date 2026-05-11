@@ -26,6 +26,8 @@ export default function ScorePage() {
   const moveRunner = useAppStore((state) => state.moveRunner);
   const advanceInning = useAppStore((state) => state.advanceInning);
   const recordOpponentRuns = useAppStore((state) => state.recordOpponentRuns);
+  const recordOpponentHit = useAppStore((state) => state.recordOpponentHit);
+  const recordOpponentError = useAppStore((state) => state.recordOpponentError);
   const finishGame = useAppStore((state) => state.finishGame);
   const undoLastPlay = useAppStore((state) => state.undoLastPlay);
 
@@ -36,6 +38,10 @@ export default function ScorePage() {
 
   const [pitcherId, setPitcherId] = useState('');
   const [opponentRunsInput, setOpponentRunsInput] = useState('1');
+
+  const currentHalf = gameProgress?.half ?? (game?.homeAway === 'thuis' ? 'top' : 'bottom');
+  const isBattingHalf =
+    game?.homeAway === 'thuis' ? currentHalf === 'bottom' : currentHalf === 'top';
 
   const currentBatter = useMemo(() => {
     if (!lineup.length || !gameProgress) return undefined;
@@ -95,6 +101,12 @@ export default function ScorePage() {
     const hits = gamePlays.filter((play) =>
       ['1B', '2B', '3B', 'HR'].includes(play.result),
     ).length;
+    const opponentHits = gamePlays.filter(
+      (play) => play.result === 'OPP_HIT',
+    ).length;
+    const ownErrors = gamePlays.filter(
+      (play) => play.result === 'OPP_ERROR',
+    ).length;
     const opponentErrors = gamePlays.filter(
       (play) => play.result === 'E',
     ).length;
@@ -105,7 +117,9 @@ export default function ScorePage() {
       runs: gameProgress?.scoreFor ?? 0,
       opponentRuns: gameProgress?.scoreAgainst ?? 0,
       hits,
-      errors: opponentErrors,
+      opponentHits,
+      errors: ownErrors,
+      opponentErrors,
     };
   }, [
     gameId,
@@ -115,6 +129,33 @@ export default function ScorePage() {
     opponentInningRuns,
     plays,
   ]);
+
+  const currentHalfFieldingStats = useMemo(() => {
+    const currentInning = gameProgress?.inning ?? 1;
+    const halfPlays = plays.filter(
+      (play) =>
+        play.gameId === gameId &&
+        !play.voided &&
+        play.inning === currentInning &&
+        play.half === currentHalf,
+    );
+
+    const runs = halfPlays.reduce((sum, play) => {
+      if (play.result !== 'OPP_RUNS') return sum;
+      const fromField = play.opponentRuns ?? 0;
+      const fromNotes = Number(play.notes?.match(/(\d+)/)?.[1] ?? 0);
+      return sum + (fromField || fromNotes || 0);
+    }, 0);
+
+    const hits = halfPlays.filter((play) => play.result === 'OPP_HIT').length;
+    const errors = halfPlays.filter((play) => play.result === 'OPP_ERROR').length;
+
+    return {
+      runs,
+      hits,
+      errors,
+    };
+  }, [currentHalf, gameId, gameProgress?.inning, plays]);
 
   if (!game || !event) {
     return (
@@ -170,7 +211,9 @@ export default function ScorePage() {
           <div className='grid gap-2 sm:grid-cols-4'>
             <div className='rounded-lg bg-white p-3'>
               <p className='text-xs uppercase text-black/60'>Inning</p>
-              <p className='text-xl font-bold'>{gameProgress?.inning ?? 1}</p>
+              <p className='text-xl font-bold'>
+                {gameProgress?.inning ?? 1} ({currentHalf})
+              </p>
             </div>
             <div className='rounded-lg bg-white p-3'>
               <p className='text-xs uppercase text-black/60'>Score</p>
@@ -187,32 +230,67 @@ export default function ScorePage() {
               <p className='text-xs uppercase text-black/60'>Plays</p>
               <p className='text-xl font-bold'>{pendingCount}</p>
             </div>
+            <div className='rounded-lg bg-white p-3 sm:col-span-4'>
+              <p className='text-xs uppercase text-black/60'>Wedstrijdmodus</p>
+              <p className='text-lg font-bold'>
+                {game.homeAway === 'thuis' ? 'Thuis' : 'Uit'} ·{' '}
+                {isBattingHalf ? 'Aan slag (batting)' : 'In het veld (fielding)'}
+              </p>
+            </div>
           </div>
 
-          <div className='mt-4 rounded-xl bg-white p-4'>
-            <p className='text-xs uppercase text-black/60'>Huidige slagman</p>
-            <p className='text-2xl font-bold'>{currentBatter?.name ?? '-'}</p>
-          </div>
+          {isBattingHalf ? (
+            <>
+              <div className='mt-4 rounded-xl bg-white p-4'>
+                <p className='text-xs uppercase text-black/60'>Huidige slagman</p>
+                <p className='text-2xl font-bold'>{currentBatter?.name ?? '-'}</p>
+              </div>
 
-          <div className='mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4'>
-            {buttons.map((result) => (
-              <button
-                key={result}
-                className='rounded-xl border border-black/10 bg-accent px-4 py-4 text-lg font-bold text-white hover:opacity-90'
-                disabled={isFinished}
-                onClick={() =>
-                  recordPlay({
-                    gameId,
-                    result,
-                    pitcherId: pitcherId || undefined,
-                  })
-                }
-                type='button'
-              >
-                {result}
-              </button>
-            ))}
-          </div>
+              <div className='mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4'>
+                {buttons.map((result) => (
+                  <button
+                    key={result}
+                    className='rounded-xl border border-black/10 bg-accent px-4 py-4 text-lg font-bold text-white hover:opacity-90'
+                    disabled={isFinished}
+                    onClick={() =>
+                      recordPlay({
+                        gameId,
+                        result,
+                        pitcherId: pitcherId || undefined,
+                      })
+                    }
+                    type='button'
+                  >
+                    {result}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className='mt-4 rounded-xl bg-white p-4'>
+              <h3 className='text-sm font-semibold uppercase text-black/60'>
+                Fielding stats (huidige helft)
+              </h3>
+              <div className='mt-2 grid gap-2 sm:grid-cols-4'>
+                <div className='rounded-lg border border-black/10 px-3 py-2'>
+                  <p className='text-xs uppercase text-black/60'>Outs</p>
+                  <p className='text-lg font-bold'>{gameProgress?.outs ?? 0}</p>
+                </div>
+                <div className='rounded-lg border border-black/10 px-3 py-2'>
+                  <p className='text-xs uppercase text-black/60'>Opp runs</p>
+                  <p className='text-lg font-bold'>{currentHalfFieldingStats.runs}</p>
+                </div>
+                <div className='rounded-lg border border-black/10 px-3 py-2'>
+                  <p className='text-xs uppercase text-black/60'>Opp hits</p>
+                  <p className='text-lg font-bold'>{currentHalfFieldingStats.hits}</p>
+                </div>
+                <div className='rounded-lg border border-black/10 px-3 py-2'>
+                  <p className='text-xs uppercase text-black/60'>Onze errors</p>
+                  <p className='text-lg font-bold'>{currentHalfFieldingStats.errors}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className='mt-4 flex flex-wrap gap-2'>
             <button
@@ -316,8 +394,12 @@ export default function ScorePage() {
                   <td className='px-2 font-semibold'>
                     {inningValues.opponentRuns}
                   </td>
-                  <td className='px-2 font-semibold'>0</td>
-                  <td className='px-2 font-semibold'>0</td>
+                  <td className='px-2 font-semibold'>
+                    {inningValues.opponentHits}
+                  </td>
+                  <td className='px-2 font-semibold'>
+                    {inningValues.opponentErrors}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -412,6 +494,7 @@ export default function ScorePage() {
             <h3 className='text-lg font-bold'>Pitcher</h3>
             <select
               className='mt-2 w-full rounded-lg border border-black/15 bg-white px-3 py-2'
+              disabled={isFinished || isBattingHalf}
               value={pitcherId}
               onChange={(event) => setPitcherId(event.target.value)}
             >
@@ -425,22 +508,40 @@ export default function ScorePage() {
           </article>
 
           <article className='rounded-2xl border border-black/10 bg-card p-4'>
-            <h3 className='text-lg font-bold'>Tegenstander score</h3>
+            <h3 className='text-lg font-bold'>Fielding stats</h3>
             <p className='mt-1 text-sm text-black/70'>
-              Voeg runs van de tegenstander handmatig toe voor deze inning.
+              Voeg defensieve events toe tijdens de fielding helft.
             </p>
-            <div className='mt-3 flex gap-2'>
+            <div className='mt-3 grid grid-cols-2 gap-2 text-sm'>
+              <div className='rounded-lg bg-white px-3 py-2'>
+                <p className='text-xs uppercase text-black/60'>Opp runs totaal</p>
+                <p className='text-lg font-bold'>{inningValues.opponentRuns}</p>
+              </div>
+              <div className='rounded-lg bg-white px-3 py-2'>
+                <p className='text-xs uppercase text-black/60'>Opp hits totaal</p>
+                <p className='text-lg font-bold'>{inningValues.opponentHits}</p>
+              </div>
+              <div className='rounded-lg bg-white px-3 py-2'>
+                <p className='text-xs uppercase text-black/60'>Onze errors totaal</p>
+                <p className='text-lg font-bold'>{inningValues.errors}</p>
+              </div>
+              <div className='rounded-lg bg-white px-3 py-2'>
+                <p className='text-xs uppercase text-black/60'>Opp errors totaal</p>
+                <p className='text-lg font-bold'>{inningValues.opponentErrors}</p>
+              </div>
+            </div>
+            <div className='mt-3 flex flex-col gap-2'>
               <input
-                className='w-24 rounded border border-black/15 px-2 py-2'
-                disabled={isFinished}
+                className='w-full rounded border border-black/15 px-3 py-2'
+                disabled={isFinished || isBattingHalf}
                 inputMode='numeric'
                 min={1}
                 onChange={(event) => setOpponentRunsInput(event.target.value)}
                 value={opponentRunsInput}
               />
               <button
-                className='rounded-lg border border-black/15 bg-white px-3 py-2 text-sm font-semibold'
-                disabled={isFinished}
+                className='w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm font-semibold'
+                disabled={isFinished || isBattingHalf}
                 onClick={() => {
                   const runs = Math.max(
                     1,
@@ -452,6 +553,22 @@ export default function ScorePage() {
                 type='button'
               >
                 + Tegenstander runs
+              </button>
+              <button
+                className='w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm font-semibold'
+                disabled={isFinished || isBattingHalf}
+                onClick={() => recordOpponentHit(gameId)}
+                type='button'
+              >
+                + Tegenstander hit
+              </button>
+              <button
+                className='w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm font-semibold'
+                disabled={isFinished || isBattingHalf}
+                onClick={() => recordOpponentError(gameId)}
+                type='button'
+              >
+                + Onze error
               </button>
             </div>
           </article>

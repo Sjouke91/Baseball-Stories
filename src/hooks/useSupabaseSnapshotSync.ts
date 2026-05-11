@@ -6,6 +6,7 @@ import { useAppStore } from '@/stores/useAppStore';
 import type { AppData } from '@/types/models';
 
 const SNAPSHOT_ID = 'global';
+let hasHydratedSnapshot = false;
 
 const pickSnapshot = (
   state: ReturnType<typeof useAppStore.getState>,
@@ -26,10 +27,23 @@ export const useSupabaseSnapshotSync = () => {
   const applyRemoteSnapshot = useAppStore((state) => state.applyRemoteSnapshot);
   const lastSerializedRef = useRef<string>('');
   const loadedRef = useRef(false);
+  const pendingSnapshotRef = useRef<{
+    snapshot: AppData;
+    serialized: string;
+  } | null>(null);
 
   useEffect(() => {
+    if (hasHydratedSnapshot) {
+      loadedRef.current = true;
+      return;
+    }
+
     const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
+    if (!supabase) {
+      loadedRef.current = true;
+      hasHydratedSnapshot = true;
+      return;
+    }
 
     let cancelled = false;
 
@@ -45,6 +59,7 @@ export const useSupabaseSnapshotSync = () => {
       if (error) {
         console.error('Failed to load Supabase snapshot:', error.message);
         loadedRef.current = true;
+        hasHydratedSnapshot = true;
         return;
       }
 
@@ -54,6 +69,7 @@ export const useSupabaseSnapshotSync = () => {
       }
 
       loadedRef.current = true;
+      hasHydratedSnapshot = true;
     };
 
     void load();
@@ -69,6 +85,24 @@ export const useSupabaseSnapshotSync = () => {
 
     let timer: ReturnType<typeof setTimeout> | null = null;
 
+    const persistSnapshot = async (snapshot: AppData, serialized: string) => {
+      const { error } = await supabase.from('app_state_snapshots').upsert(
+        {
+          id: SNAPSHOT_ID,
+          data: snapshot,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' },
+      );
+
+      if (error) {
+        console.error('Failed to save Supabase snapshot:', error.message);
+        return;
+      }
+
+      lastSerializedRef.current = serialized;
+    };
+
     const unsubscribe = useAppStore.subscribe((state) => {
       if (!loadedRef.current) return;
 
@@ -76,28 +110,26 @@ export const useSupabaseSnapshotSync = () => {
       const serialized = JSON.stringify(snapshot);
       if (serialized === lastSerializedRef.current) return;
 
+      pendingSnapshotRef.current = { snapshot, serialized };
+
       if (timer) clearTimeout(timer);
       timer = setTimeout(async () => {
-        const { error } = await supabase.from('app_state_snapshots').upsert(
-          {
-            id: SNAPSHOT_ID,
-            data: snapshot,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'id' },
-        );
-
-        if (error) {
-          console.error('Failed to save Supabase snapshot:', error.message);
-          return;
-        }
-
-        lastSerializedRef.current = serialized;
+        const pending = pendingSnapshotRef.current;
+        if (!pending) return;
+        pendingSnapshotRef.current = null;
+        await persistSnapshot(pending.snapshot, pending.serialized);
       }, 500);
     });
 
     return () => {
       if (timer) clearTimeout(timer);
+
+      const pending = pendingSnapshotRef.current;
+      if (pending) {
+        pendingSnapshotRef.current = null;
+        void persistSnapshot(pending.snapshot, pending.serialized);
+      }
+
       unsubscribe();
     };
   }, []);

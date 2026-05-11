@@ -5,21 +5,27 @@ import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { AppShell } from '@/components/AppShell';
-import { sortedEvents } from '@/lib/selectors';
+import { getEventGame, isMatchEventType, sortedEvents } from '@/lib/selectors';
 import { useActiveTeam, useAppStore } from '@/stores/useAppStore';
 
 export default function HomePage() {
   const team = useActiveTeam();
   const events = useAppStore((state) => state.events);
+  const games = useAppStore((state) => state.games);
   const createTeam = useAppStore((state) => state.createTeam);
 
   const [name, setName] = useState('');
   const [season, setSeason] = useState(String(new Date().getFullYear()));
 
-  const upcoming = useMemo(() => {
+  const upcomingMatches = useMemo(() => {
     const list = sortedEvents({ events });
-    return list.find((event) => new Date(event.date) >= new Date());
-  }, [events]);
+    return list.filter((event) => {
+      if (event.teamId !== team?.id) return false;
+      if (!isMatchEventType(event.type)) return false;
+      const game = getEventGame({ games }, event.id);
+      return game?.status !== 'klaar';
+    });
+  }, [events, games, team?.id]);
 
   return (
     <AppShell title='Dashboard'>
@@ -67,29 +73,58 @@ export default function HomePage() {
         </article>
 
         <article className='rounded-2xl border border-black/10 bg-card p-5 shadow-sm'>
-          <h2 className='text-xl font-bold'>Volgende activiteit</h2>
-          {upcoming ? (
-            <div className='mt-4 rounded-xl bg-white p-4'>
-              <p className='text-sm uppercase tracking-wide text-black/60'>
-                {upcoming.type}
-              </p>
-              <p className='text-lg font-semibold'>
-                {format(new Date(upcoming.date), 'EEEE d MMMM', { locale: nl })}
-              </p>
-              <p className='text-sm text-black/70'>
-                {upcoming.time ?? 'Tijd onbekend'} ·{' '}
-                {upcoming.location ?? 'Locatie onbekend'}
-              </p>
-              <Link
-                className='mt-3 inline-block rounded-lg border border-black/15 px-3 py-1.5 text-sm font-semibold hover:bg-muted'
-                href={`/agenda/${upcoming.id}`}
-              >
-                Open activiteit
-              </Link>
+          <h2 className='text-xl font-bold'>Wedstrijd tijdlijn</h2>
+          <p className='mt-1 text-sm text-black/70'>
+            Alleen wedstrijden die nog niet gespeeld zijn.
+          </p>
+          {upcomingMatches.length ? (
+            <div className='mt-4 grid gap-2'>
+              {upcomingMatches.map((event) => {
+                const game = getEventGame({ games }, event.id);
+
+                return (
+                  <div
+                    key={event.id}
+                    className='rounded-xl border border-black/10 bg-white p-4'
+                  >
+                    <p className='text-xs uppercase tracking-wide text-black/60'>
+                      {event.type}
+                    </p>
+                    <p className='text-lg font-semibold'>
+                      {format(new Date(event.date), 'EEEE d MMMM', {
+                        locale: nl,
+                      })}
+                    </p>
+                    <p className='text-sm text-black/70'>
+                      {event.time ?? 'Tijd onbekend'} ·{' '}
+                      {event.location ?? 'Locatie onbekend'}
+                    </p>
+                    <p className='mt-1 text-sm text-black/70'>
+                      {event.opponent ? `vs ${event.opponent}` : 'Tegenstander onbekend'}
+                    </p>
+                    <div className='mt-3 flex flex-wrap gap-2'>
+                      <Link
+                        className='rounded-lg border border-black/15 px-3 py-1.5 text-sm font-semibold hover:bg-muted'
+                        href={`/agenda/${event.id}`}
+                      >
+                        Open in agenda
+                      </Link>
+                      {game ? (
+                        <Link
+                          className='rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white'
+                          href={`/wedstrijd/${game.id}`}
+                        >
+                          Open wedstrijd
+                        </Link>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p className='mt-4 text-sm text-black/70'>
-              Nog geen activiteiten ingepland.
+              Geen openstaande wedstrijden in de tijdlijn.
             </p>
           )}
           <div className='mt-4 flex flex-wrap gap-2'>

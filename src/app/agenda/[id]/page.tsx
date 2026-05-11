@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { AppShell } from '@/components/AppShell';
 import { useAppStore } from '@/stores/useAppStore';
 import type { AttendanceStatus } from '@/types/models';
@@ -16,6 +16,7 @@ const statuses: AttendanceStatus[] = [
 
 export default function AgendaDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const id = params.id;
 
   const events = useAppStore((state) => state.events);
@@ -24,14 +25,18 @@ export default function AgendaDetailPage() {
   const games = useAppStore((state) => state.games);
   const setAttendanceStatus = useAppStore((state) => state.setAttendanceStatus);
   const ensureGameForEvent = useAppStore((state) => state.ensureGameForEvent);
+  const setGameHomeAway = useAppStore((state) => state.setGameHomeAway);
+  const deleteMatch = useAppStore((state) => state.deleteMatch);
 
   const event = events.find((entry) => entry.id === id);
+  const isMatchEvent = event?.type.includes('wedstrijd') ?? false;
 
   const gameId = useMemo(() => {
     if (!event || !event.type.includes('wedstrijd')) return undefined;
     const existing = games.find((game) => game.eventId === event.id);
     return existing?.id ?? ensureGameForEvent(event.id, 'thuis');
   }, [ensureGameForEvent, event, games]);
+  const game = games.find((entry) => entry.id === gameId);
 
   if (!event) {
     return (
@@ -60,6 +65,22 @@ export default function AgendaDetailPage() {
         </p>
         {gameId ? (
           <div className='mt-3 flex flex-wrap gap-2'>
+            <label className='inline-flex items-center gap-2 rounded-lg border border-black/15 bg-white px-3 py-2 text-sm font-semibold'>
+              Thuis/uit
+              <select
+                className='rounded border border-black/15 px-2 py-1 text-sm'
+                onChange={(nextEvent) =>
+                  setGameHomeAway(
+                    gameId,
+                    nextEvent.target.value as 'thuis' | 'uit',
+                  )
+                }
+                value={game?.homeAway ?? 'thuis'}
+              >
+                <option value='thuis'>thuis</option>
+                <option value='uit'>uit</option>
+              </select>
+            </label>
             <Link
               className='rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white'
               href={`/wedstrijd/${gameId}`}
@@ -78,6 +99,24 @@ export default function AgendaDetailPage() {
             >
               Live scoresheet
             </Link>
+            {isMatchEvent ? (
+              <button
+                className='rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50'
+                onClick={() => {
+                  if (
+                    typeof window !== 'undefined' &&
+                    !window.confirm('Weet je zeker dat je deze wedstrijd wilt verwijderen?')
+                  ) {
+                    return;
+                  }
+                  deleteMatch(event.id);
+                  router.push('/agenda?deleted=1');
+                }}
+                type='button'
+              >
+                Wedstrijd verwijderen
+              </button>
+            ) : null}
           </div>
         ) : null}
       </section>

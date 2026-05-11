@@ -26,6 +26,8 @@ export type PlayResult =
   | 'SB'
   | 'CS'
   | 'OPP_RUNS'
+  | 'OPP_HIT'
+  | 'OPP_ERROR'
   | 'INNING_ADVANCE';
 
 export type HalfInning = 'top' | 'bottom';

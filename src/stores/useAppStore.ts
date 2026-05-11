@@ -20,9 +20,9 @@ import type {
   TeamEvent,
 } from '@/types/models';
 
-const blankProgress = (): LiveGameProgress => ({
+const blankProgress = (startingHalf: HalfInning = 'bottom'): LiveGameProgress => ({
   inning: 1,
-  half: 'bottom',
+  half: startingHalf,
   outs: 0,
   battingIndex: 0,
   scoreFor: 0,
@@ -46,8 +46,10 @@ const cloneSnapshot = (
 
 const applyThreeOutRule = (progress: LiveGameProgress): LiveGameProgress => {
   if (progress.outs < 3) return progress;
-  const nextHalf: HalfInning = 'bottom';
-  const nextInning = progress.inning + 1;
+
+  const nextHalf: HalfInning = progress.half === 'top' ? 'bottom' : 'top';
+  const nextInning = progress.half === 'top' ? progress.inning : progress.inning + 1;
+
   return {
     ...progress,
     inning: nextInning,
@@ -218,7 +220,9 @@ interface AppState extends AppData {
     opponent?: string;
     notes?: string;
   }) => void;
+  deleteMatch: (eventId: string) => void;
   ensureGameForEvent: (eventId: string, homeAway: Game['homeAway']) => string;
+  setGameHomeAway: (gameId: string, homeAway: Game['homeAway']) => void;
   setAttendanceStatus: (
     eventId: string,
     playerId: string,
@@ -248,6 +252,8 @@ interface AppState extends AppData {
   }) => void;
   advanceInning: (gameId: string) => void;
   recordOpponentRuns: (input: { gameId: string; runs: number }) => void;
+  recordOpponentHit: (gameId: string) => void;
+  recordOpponentError: (gameId: string) => void;
   finishGame: (gameId: string) => void;
   undoLastPlay: (gameId: string) => void;
   setOnline: (online: boolean) => void;
@@ -370,6 +376,43 @@ export const useAppStore = create<AppState>()(
 
         set((state) => ({ events: [...state.events, event] }));
       },
+      deleteMatch: (eventId) => {
+        set((state) => {
+          const gameIdsToRemove = new Set(
+            state.games
+              .filter((game) => game.eventId === eventId)
+              .map((game) => game.id),
+          );
+          const playIdsToRemove = new Set(
+            state.plays
+              .filter((play) => gameIdsToRemove.has(play.gameId))
+              .map((play) => play.id),
+          );
+          const nextGameProgress = Object.fromEntries(
+            Object.entries(state.gameProgress).filter(
+              ([gameId]) => !gameIdsToRemove.has(gameId),
+            ),
+          );
+
+          return {
+            events: state.events.filter((event) => event.id !== eventId),
+            attendance: state.attendance.filter(
+              (entry) => entry.eventId !== eventId,
+            ),
+            games: state.games.filter((game) => game.eventId !== eventId),
+            lineups: state.lineups.filter(
+              (entry) => !gameIdsToRemove.has(entry.gameId),
+            ),
+            plays: state.plays.filter(
+              (play) => !gameIdsToRemove.has(play.gameId),
+            ),
+            runnerEvents: state.runnerEvents.filter(
+              (entry) => !playIdsToRemove.has(entry.playId),
+            ),
+            gameProgress: nextGameProgress,
+          };
+        });
+      },
       ensureGameForEvent: (eventId, homeAway) => {
         const existing = get().games.find((game) => game.eventId === eventId);
         if (existing) return existing.id;
@@ -386,11 +429,37 @@ export const useAppStore = create<AppState>()(
           games: [...state.games, game],
           gameProgress: {
             ...state.gameProgress,
-            [game.id]: blankProgress(),
+            [game.id]: blankProgress(homeAway === 'thuis' ? 'top' : 'bottom'),
           },
         }));
 
         return game.id;
+      },
+      setGameHomeAway: (gameId, homeAway) => {
+        set((state) => {
+          const game = state.games.find((entry) => entry.id === gameId);
+          if (!game || game.homeAway === homeAway) {
+            return {};
+          }
+
+          const progress = state.gameProgress[gameId] ?? blankProgress();
+          const shouldResetHalf = progress.inning === 1 && progress.outs === 0;
+
+          return {
+            games: state.games.map((entry) =>
+              entry.id === gameId ? { ...entry, homeAway } : entry,
+            ),
+            gameProgress: {
+              ...state.gameProgress,
+              [gameId]: shouldResetHalf
+                ? {
+                    ...progress,
+                    half: homeAway === 'thuis' ? 'top' : 'bottom',
+                  }
+                : progress,
+            },
+          };
+        });
       },
       setAttendanceStatus: (eventId, playerId, status) => {
         const existing = get().attendance.find(
@@ -423,12 +492,40 @@ export const useAppStore = create<AppState>()(
           isStarter: true,
         }));
 
-        set((state) => ({
-          lineups: [
-            ...state.lineups.filter((entry) => entry.gameId !== gameId),
-            ...nextRows,
-          ],
-        }));
+        set((state) => {
+          const previousLineup = state.lineups
+            .filter((entry) => entry.gameId === gameId)
+            .sort((a, b) => a.battingOrder - b.battingOrder);
+          const progress = state.gameProgress[gameId];
+
+          let nextBattingIndex = progress?.battingIndex ?? 0;
+
+          if (progress && previousLineup.length > 0 && nextRows.length > 0) {
+            const currentIndex = progress.battingIndex % previousLineup.length;
+            const currentBatterId = previousLineup[currentIndex]?.playerId;
+            const movedToIndex = nextRows.findIndex(
+              (entry) => entry.playerId === currentBatterId,
+            );
+
+            nextBattingIndex = movedToIndex >= 0 ? movedToIndex : 0;
+          }
+
+          return {
+            lineups: [
+              ...state.lineups.filter((entry) => entry.gameId !== gameId),
+              ...nextRows,
+            ],
+            gameProgress: progress
+              ? {
+                  ...state.gameProgress,
+                  [gameId]: {
+                    ...progress,
+                    battingIndex: nextBattingIndex,
+                  },
+                }
+              : state.gameProgress,
+          };
+        });
       },
       recordPlay: ({ gameId, result, pitcherId, outsOnPlay, rbi, notes }) => {
         const state = get();
@@ -737,10 +834,13 @@ export const useAppStore = create<AppState>()(
         const sequence =
           state.plays.filter((play) => play.gameId === gameId).length + 1;
 
+        const nextHalf: HalfInning = progress.half === 'top' ? 'bottom' : 'top';
+        const nextInning = progress.half === 'top' ? progress.inning : progress.inning + 1;
+
         const nextProgress: LiveGameProgress = {
           ...progress,
-          inning: progress.inning + 1,
-          half: 'bottom',
+          inning: nextInning,
+          half: nextHalf,
           outs: 0,
           bases: {},
           history: [
@@ -829,6 +929,64 @@ export const useAppStore = create<AppState>()(
             game.id === gameId && game.status === 'gepland'
               ? { ...game, status: 'bezig' }
               : game,
+          ),
+        }));
+      },
+      recordOpponentHit: (gameId) => {
+        const state = get();
+        const progress = state.gameProgress[gameId] ?? blankProgress();
+        const play: Play = {
+          id: uid(),
+          gameId,
+          inning: progress.inning,
+          half: progress.half,
+          sequence:
+            state.plays.filter((entry) => entry.gameId === gameId).length + 1,
+          result: 'OPP_HIT',
+          runsScored: 0,
+          rbi: 0,
+          outsOnPlay: 0,
+          notes: 'Tegenstander hit',
+          voided: false,
+          syncStatus: 'pending',
+          createdAt: new Date().toISOString(),
+        };
+
+        set((current) => ({
+          plays: [...current.plays, play],
+          games: current.games.map((entry) =>
+            entry.id === gameId && entry.status === 'gepland'
+              ? { ...entry, status: 'bezig' }
+              : entry,
+          ),
+        }));
+      },
+      recordOpponentError: (gameId) => {
+        const state = get();
+        const progress = state.gameProgress[gameId] ?? blankProgress();
+        const play: Play = {
+          id: uid(),
+          gameId,
+          inning: progress.inning,
+          half: progress.half,
+          sequence:
+            state.plays.filter((entry) => entry.gameId === gameId).length + 1,
+          result: 'OPP_ERROR',
+          runsScored: 0,
+          rbi: 0,
+          outsOnPlay: 0,
+          notes: 'Fout tegenstander',
+          voided: false,
+          syncStatus: 'pending',
+          createdAt: new Date().toISOString(),
+        };
+
+        set((current) => ({
+          plays: [...current.plays, play],
+          games: current.games.map((entry) =>
+            entry.id === gameId && entry.status === 'gepland'
+              ? { ...entry, status: 'bezig' }
+              : entry,
           ),
         }));
       },

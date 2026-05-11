@@ -115,6 +115,12 @@ export default function GameOverviewPage() {
     const hits = gamePlays.filter((play) =>
       ['1B', '2B', '3B', 'HR'].includes(play.result),
     ).length;
+    const opponentHits = gamePlays.filter(
+      (play) => play.result === 'OPP_HIT',
+    ).length;
+    const ownErrors = gamePlays.filter(
+      (play) => play.result === 'OPP_ERROR',
+    ).length;
     const opponentErrors = gamePlays.filter(
       (play) => play.result === 'E',
     ).length;
@@ -125,7 +131,9 @@ export default function GameOverviewPage() {
       runs: progress?.scoreFor ?? game?.finalScoreFor ?? 0,
       opponentRuns: progress?.scoreAgainst ?? game?.finalScoreAgainst ?? 0,
       hits,
-      errors: opponentErrors,
+      opponentHits,
+      errors: ownErrors,
+      opponentErrors,
     };
   }, [
     game?.finalScoreAgainst,
@@ -153,6 +161,9 @@ export default function GameOverviewPage() {
         <h2 className='text-2xl font-bold'>
           {event.opponent ? `vs ${event.opponent}` : 'Wedstrijd'}
         </h2>
+        <p className='mt-1 text-sm font-semibold text-black/70'>
+          {game.homeAway === 'thuis' ? 'Thuiswedstrijd' : 'Uitwedstrijd'}
+        </p>
         <p className='mt-1 text-sm text-black/70'>
           {event.date} {event.time ? `· ${event.time}` : ''}{' '}
           {event.location ? `· ${event.location}` : ''}
@@ -233,8 +244,8 @@ export default function GameOverviewPage() {
                 </td>
               ))}
               <td className='px-2 font-semibold'>{scorecard.opponentRuns}</td>
-              <td className='px-2 font-semibold'>0</td>
-              <td className='px-2 font-semibold'>0</td>
+              <td className='px-2 font-semibold'>{scorecard.opponentHits}</td>
+              <td className='px-2 font-semibold'>{scorecard.opponentErrors}</td>
             </tr>
           </tbody>
         </table>

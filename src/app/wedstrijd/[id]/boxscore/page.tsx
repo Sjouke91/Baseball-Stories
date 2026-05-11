@@ -27,6 +27,21 @@ export default function BoxScorePage() {
         })),
     [snapshot],
   );
+  const gamePlays = useMemo(
+    () => snapshot.plays.filter((play) => play.gameId === gameId && !play.voided),
+    [gameId, snapshot.plays],
+  );
+
+  const opponentTotals = useMemo(() => {
+    const hits = gamePlays.filter((play) => play.result === 'OPP_HIT').length;
+    const errors = gamePlays.filter((play) => play.result === 'E').length;
+
+    return {
+      runs: progress?.scoreAgainst ?? 0,
+      hits,
+      errors,
+    };
+  }, [gamePlays, progress?.scoreAgainst]);
 
   if (!game || !event) {
     return (
@@ -53,9 +68,30 @@ export default function BoxScorePage() {
         <h2 className='text-2xl font-bold'>
           {event.opponent ? `vs ${event.opponent}` : 'Wedstrijd'}
         </h2>
+        <p className='mt-1 text-sm font-semibold text-black/70'>
+          {game.homeAway === 'thuis' ? 'Thuiswedstrijd' : 'Uitwedstrijd'}
+        </p>
         <p className='text-sm text-black/70'>
           Eindstand: {progress?.scoreFor ?? 0} - {progress?.scoreAgainst ?? 0}
         </p>
+      </section>
+
+      <section className='mt-4 rounded-2xl border border-black/10 bg-card p-4'>
+        <h3 className='text-lg font-bold'>Tegenstander stats</h3>
+        <div className='mt-3 grid gap-2 sm:grid-cols-3'>
+          <div className='rounded-lg bg-white p-3'>
+            <p className='text-xs uppercase text-black/60'>Runs</p>
+            <p className='text-xl font-bold'>{opponentTotals.runs}</p>
+          </div>
+          <div className='rounded-lg bg-white p-3'>
+            <p className='text-xs uppercase text-black/60'>Hits</p>
+            <p className='text-xl font-bold'>{opponentTotals.hits}</p>
+          </div>
+          <div className='rounded-lg bg-white p-3'>
+            <p className='text-xs uppercase text-black/60'>Errors</p>
+            <p className='text-xl font-bold'>{opponentTotals.errors}</p>
+          </div>
+        </div>
       </section>
 
       <section className='mt-4 overflow-x-auto rounded-2xl border border-black/10 bg-card p-4'>
