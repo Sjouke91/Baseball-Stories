@@ -126,6 +126,7 @@ const advanceBases = (
 
 interface AppState extends AppData {
   online: boolean;
+  applyRemoteSnapshot: (snapshot: Partial<AppData>) => void;
   createTeam: (name: string, season: string) => void;
   addPlayer: (input: {
     name: string;
@@ -192,6 +193,44 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       ...initialState,
       online: true,
+      applyRemoteSnapshot: (snapshot) => {
+        set((state) => {
+          const teams = Array.isArray(snapshot.teams)
+            ? snapshot.teams
+            : state.teams;
+          const teamIds = new Set(teams.map((team) => team.id));
+          const snapshotActiveTeamId =
+            snapshot.activeTeamId && teamIds.has(snapshot.activeTeamId)
+              ? snapshot.activeTeamId
+              : teams[0]?.id;
+
+          return {
+            teams,
+            players: Array.isArray(snapshot.players)
+              ? snapshot.players
+              : state.players,
+            events: Array.isArray(snapshot.events)
+              ? snapshot.events
+              : state.events,
+            attendance: Array.isArray(snapshot.attendance)
+              ? snapshot.attendance
+              : state.attendance,
+            games: Array.isArray(snapshot.games) ? snapshot.games : state.games,
+            lineups: Array.isArray(snapshot.lineups)
+              ? snapshot.lineups
+              : state.lineups,
+            plays: Array.isArray(snapshot.plays) ? snapshot.plays : state.plays,
+            runnerEvents: Array.isArray(snapshot.runnerEvents)
+              ? snapshot.runnerEvents
+              : state.runnerEvents,
+            gameProgress:
+              snapshot.gameProgress && typeof snapshot.gameProgress === 'object'
+                ? snapshot.gameProgress
+                : state.gameProgress,
+            activeTeamId: snapshotActiveTeamId,
+          };
+        });
+      },
       createTeam: (name, season) => {
         const team: Team = {
           id: uid(),

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect } from 'react';
+import { useSupabaseSnapshotSync } from '@/hooks/useSupabaseSnapshotSync';
 import { syncIndicator } from '@/lib/selectors';
 import { useActiveTeam, useAppStore } from '@/stores/useAppStore';
 
@@ -24,6 +25,8 @@ export function AppShell({
   children: React.ReactNode;
   title: string;
 }) {
+  useSupabaseSnapshotSync();
+
   const team = useActiveTeam();
   const online = useAppStore((state) => state.online);
   const setOnline = useAppStore((state) => state.setOnline);
