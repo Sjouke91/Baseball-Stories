@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { AppShell } from '@/components/AppShell';
+import { GameTabs } from '@/components/GameTabs';
 import { getLineupForGame } from '@/lib/selectors';
 import { useAppStore } from '@/stores/useAppStore';
 
@@ -10,6 +12,7 @@ const positions = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH'];
 
 export default function LineupPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const gameId = params.id;
 
   const players = useAppStore((state) => state.players);
@@ -18,7 +21,10 @@ export default function LineupPage() {
   const setLineup = useAppStore((state) => state.setLineup);
 
   const game = games.find((entry) => entry.id === gameId);
-  const existing = getLineupForGame({ lineups }, gameId);
+  const existing = useMemo(
+    () => getLineupForGame({ lineups }, gameId),
+    [gameId, lineups],
+  );
 
   const activePlayers = useMemo(() => {
     if (!game) return [];
@@ -32,6 +38,7 @@ export default function LineupPage() {
         existing[index]?.startingPosition ?? positions[index] ?? 'DH',
     })),
   );
+  const [message, setMessage] = useState('');
 
   if (!game) {
     return (
@@ -43,6 +50,17 @@ export default function LineupPage() {
 
   return (
     <AppShell title='Line-up builder'>
+      <GameTabs gameId={gameId} current='lineup' />
+
+      <div className='mb-4'>
+        <Link
+          className='rounded-lg border border-black/15 bg-white px-3 py-2 text-sm font-semibold'
+          href={`/wedstrijd/${gameId}`}
+        >
+          Terug naar wedstrijd
+        </Link>
+      </div>
+
       <section className='rounded-2xl border border-black/10 bg-card p-4'>
         <p className='text-sm text-black/70'>
           Stel batting order en startposities in.
@@ -98,16 +116,31 @@ export default function LineupPage() {
         </div>
         <button
           className='mt-4 rounded-lg bg-accent px-3 py-2 font-semibold text-white'
-          onClick={() =>
-            setLineup(
-              gameId,
-              entries.filter((entry) => entry.playerId),
-            )
-          }
+          onClick={() => {
+            const selected = entries.filter((entry) => entry.playerId);
+            const unique = new Set(selected.map((entry) => entry.playerId));
+
+            if (!selected.length) {
+              setMessage('Kies minimaal 1 speler om op te slaan.');
+              return;
+            }
+
+            if (unique.size !== selected.length) {
+              setMessage('Elke speler mag maar 1 keer in de line-up staan.');
+              return;
+            }
+
+            setLineup(gameId, selected);
+            setMessage('Line-up opgeslagen.');
+            router.push(`/wedstrijd/${gameId}/score`);
+          }}
           type='button'
         >
           Line-up opslaan
         </button>
+        {message ? (
+          <p className='mt-2 text-sm text-black/70'>{message}</p>
+        ) : null}
       </section>
     </AppShell>
   );

@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { AppShell } from '@/components/AppShell';
+import { GameTabs } from '@/components/GameTabs';
 import { playerHittingStats } from '@/lib/selectors';
 import { useAppStore } from '@/stores/useAppStore';
 
@@ -36,6 +38,17 @@ export default function BoxScorePage() {
 
   return (
     <AppShell title='Box score'>
+      <GameTabs gameId={gameId} current='boxscore' />
+
+      <div className='mb-4'>
+        <Link
+          className='rounded-lg border border-black/15 bg-white px-3 py-2 text-sm font-semibold'
+          href={`/wedstrijd/${gameId}`}
+        >
+          Terug naar wedstrijd
+        </Link>
+      </div>
+
       <section className='rounded-2xl border border-black/10 bg-card p-4'>
         <h2 className='text-2xl font-bold'>
           {event.opponent ? `vs ${event.opponent}` : 'Wedstrijd'}

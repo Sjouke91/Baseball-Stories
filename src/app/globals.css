@@ -1,13 +1,13 @@
 @import 'tailwindcss';
 
 :root {
-  --background: #f6f6ef;
-  --foreground: #162218;
-  --card: #fffdf6;
-  --muted: #e8e6d9;
-  --accent: #b02828;
-  --accent-2: #1f5c2f;
-  --warning: #d4a01e;
+  --background: #e7e1d4;
+  --foreground: #131a23;
+  --card: #fffdf7;
+  --muted: #d9d1bf;
+  --accent: #b8261d;
+  --accent-2: #0f3b57;
+  --warning: #c7881a;
 }
 
 @theme inline {
@@ -23,12 +23,15 @@
 }
 
 body {
-  background:
-    radial-gradient(circle at top left, #fffae0 0%, transparent 50%),
-    radial-gradient(circle at 90% 10%, #d8ebd5 0%, transparent 40%),
-    var(--background);
+  background-image:
+    radial-gradient(circle at 12% -10%, #ffffffd0 0%, transparent 34%),
+    radial-gradient(circle at 92% 3%, #c4d7e899 0%, transparent 38%),
+    radial-gradient(circle at 55% 100%, #9f9a8a4d 0%, transparent 32%),
+    linear-gradient(135deg, #efe9dd 0%, #ddd5c2 100%);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-body), sans-serif;
+  letter-spacing: 0.01em;
 }
 
 h1,
@@ -36,4 +39,35 @@ h2,
 h3,
 h4 {
   font-family: var(--font-display), sans-serif;
+  letter-spacing: -0.015em;
+}
+
+a,
+button,
+input,
+select,
+textarea {
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent-2), white 25%);
+  outline-offset: 2px;
+}
+
+section.rounded-2xl,
+article.rounded-2xl {
+  box-shadow:
+    0 12px 24px -18px #1a243366,
+    0 2px 2px #1a24331a;
 }

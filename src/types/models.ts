@@ -24,7 +24,9 @@ export type PlayResult =
   | 'FC'
   | 'SAC'
   | 'SB'
-  | 'CS';
+  | 'CS'
+  | 'OPP_RUNS'
+  | 'INNING_ADVANCE';
 
 export type HalfInning = 'top' | 'bottom';
 
@@ -113,6 +115,7 @@ export interface Play {
   result: PlayResult;
   rbi: number;
   runsScored: number;
+  opponentRuns?: number;
   outsOnPlay: number;
   fieldingPlay?: string;
   notes?: string;

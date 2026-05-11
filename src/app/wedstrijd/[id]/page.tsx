@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { AppShell } from '@/components/AppShell';
+import { GameTabs } from '@/components/GameTabs';
 import { useAppStore } from '@/stores/useAppStore';
 
 export default function GameDetailPage() {
@@ -35,6 +36,7 @@ export default function GameDetailPage() {
 
   return (
     <AppShell title='Wedstrijd-detail'>
+      <GameTabs gameId={id} current='overzicht' />
       <section className='rounded-2xl border border-black/10 bg-card p-5'>
         <p className='text-xs uppercase tracking-wide text-black/60'>
           {game.homeAway}
@@ -61,6 +63,12 @@ export default function GameDetailPage() {
           </div>
         </div>
         <div className='mt-4 flex flex-wrap gap-2'>
+          <Link
+            className='rounded-lg border border-black/15 bg-white px-3 py-2 text-sm font-semibold'
+            href={`/wedstrijd/${id}/overzicht`}
+          >
+            Wedstrijd overzicht
+          </Link>
           <Link
             className='rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white'
             href={`/wedstrijd/${id}/lineup`}

@@ -52,19 +52,19 @@ export function AppShell({
 
   return (
     <div className='min-h-screen'>
-      <header className='sticky top-0 z-10 border-b border-black/10 bg-card/95 backdrop-blur'>
+      <header className='sticky top-0 z-10 border-b border-white/10 bg-slate-950/90 text-white shadow-xl backdrop-blur-md'>
         <div className='mx-auto flex w-full max-w-6xl flex-wrap items-center gap-3 px-4 py-3'>
           <div>
-            <p className='text-xs uppercase tracking-[0.24em] text-black/60'>
+            <p className='text-xs uppercase tracking-[0.24em] text-white/60'>
               Baseball Stories
             </p>
             <h1 className='text-2xl font-bold leading-tight'>{title}</h1>
           </div>
           <div className='ml-auto flex items-center gap-3'>
-            <div className='rounded-full bg-muted px-3 py-1 text-sm font-semibold'>
+            <div className='rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm font-semibold text-white'>
               {team ? `${team.name} (${team.season})` : 'Maak eerst een team'}
             </div>
-            <div className='flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wider'>
+            <div className='flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white'>
               <span
                 className={`h-2.5 w-2.5 rounded-full ${syncColor[indicator]}`}
               />
@@ -73,25 +73,25 @@ export function AppShell({
           </div>
           <nav className='flex w-full flex-wrap gap-2 text-sm font-medium'>
             <Link
-              className='rounded-full border border-black/10 bg-white px-3 py-1.5 hover:bg-muted'
+              className='rounded-full border border-white/15 bg-white/10 px-3 py-1.5 font-semibold text-white hover:-translate-y-0.5 hover:bg-white/20'
               href='/'
             >
               Dashboard
             </Link>
             <Link
-              className='rounded-full border border-black/10 bg-white px-3 py-1.5 hover:bg-muted'
+              className='rounded-full border border-white/15 bg-white/10 px-3 py-1.5 font-semibold text-white hover:-translate-y-0.5 hover:bg-white/20'
               href='/spelers'
             >
               Spelers
             </Link>
             <Link
-              className='rounded-full border border-black/10 bg-white px-3 py-1.5 hover:bg-muted'
+              className='rounded-full border border-white/15 bg-white/10 px-3 py-1.5 font-semibold text-white hover:-translate-y-0.5 hover:bg-white/20'
               href='/agenda'
             >
               Agenda
             </Link>
             <Link
-              className='rounded-full border border-black/10 bg-white px-3 py-1.5 hover:bg-muted'
+              className='rounded-full border border-white/15 bg-white/10 px-3 py-1.5 font-semibold text-white hover:-translate-y-0.5 hover:bg-white/20'
               href='/stats'
             >
               Stats
