@@ -20,7 +20,9 @@ import type {
   TeamEvent,
 } from '@/types/models';
 
-const blankProgress = (startingHalf: HalfInning = 'bottom'): LiveGameProgress => ({
+const blankProgress = (
+  startingHalf: HalfInning = 'bottom',
+): LiveGameProgress => ({
   inning: 1,
   half: startingHalf,
   outs: 0,
@@ -48,7 +50,8 @@ const applyThreeOutRule = (progress: LiveGameProgress): LiveGameProgress => {
   if (progress.outs < 3) return progress;
 
   const nextHalf: HalfInning = progress.half === 'top' ? 'bottom' : 'top';
-  const nextInning = progress.half === 'top' ? progress.inning : progress.inning + 1;
+  const nextInning =
+    progress.half === 'top' ? progress.inning : progress.inning + 1;
 
   return {
     ...progress,
@@ -835,7 +838,8 @@ export const useAppStore = create<AppState>()(
           state.plays.filter((play) => play.gameId === gameId).length + 1;
 
         const nextHalf: HalfInning = progress.half === 'top' ? 'bottom' : 'top';
-        const nextInning = progress.half === 'top' ? progress.inning : progress.inning + 1;
+        const nextInning =
+          progress.half === 'top' ? progress.inning : progress.inning + 1;
 
         const nextProgress: LiveGameProgress = {
           ...progress,

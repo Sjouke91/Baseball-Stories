@@ -100,7 +100,9 @@ export default function HomePage() {
                       {event.location ?? 'Locatie onbekend'}
                     </p>
                     <p className='mt-1 text-sm text-black/70'>
-                      {event.opponent ? `vs ${event.opponent}` : 'Tegenstander onbekend'}
+                      {event.opponent
+                        ? `vs ${event.opponent}`
+                        : 'Tegenstander onbekend'}
                     </p>
                     <div className='mt-3 flex flex-wrap gap-2'>
                       <Link

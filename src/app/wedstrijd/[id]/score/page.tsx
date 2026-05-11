@@ -39,9 +39,12 @@ export default function ScorePage() {
   const [pitcherId, setPitcherId] = useState('');
   const [opponentRunsInput, setOpponentRunsInput] = useState('1');
 
-  const currentHalf = gameProgress?.half ?? (game?.homeAway === 'thuis' ? 'top' : 'bottom');
+  const currentHalf =
+    gameProgress?.half ?? (game?.homeAway === 'thuis' ? 'top' : 'bottom');
   const isBattingHalf =
-    game?.homeAway === 'thuis' ? currentHalf === 'bottom' : currentHalf === 'top';
+    game?.homeAway === 'thuis'
+      ? currentHalf === 'bottom'
+      : currentHalf === 'top';
 
   const currentBatter = useMemo(() => {
     if (!lineup.length || !gameProgress) return undefined;
@@ -148,7 +151,9 @@ export default function ScorePage() {
     }, 0);
 
     const hits = halfPlays.filter((play) => play.result === 'OPP_HIT').length;
-    const errors = halfPlays.filter((play) => play.result === 'OPP_ERROR').length;
+    const errors = halfPlays.filter(
+      (play) => play.result === 'OPP_ERROR',
+    ).length;
 
     return {
       runs,
@@ -234,7 +239,9 @@ export default function ScorePage() {
               <p className='text-xs uppercase text-black/60'>Wedstrijdmodus</p>
               <p className='text-lg font-bold'>
                 {game.homeAway === 'thuis' ? 'Thuis' : 'Uit'} ·{' '}
-                {isBattingHalf ? 'Aan slag (batting)' : 'In het veld (fielding)'}
+                {isBattingHalf
+                  ? 'Aan slag (batting)'
+                  : 'In het veld (fielding)'}
               </p>
             </div>
           </div>
@@ -242,8 +249,12 @@ export default function ScorePage() {
           {isBattingHalf ? (
             <>
               <div className='mt-4 rounded-xl bg-white p-4'>
-                <p className='text-xs uppercase text-black/60'>Huidige slagman</p>
-                <p className='text-2xl font-bold'>{currentBatter?.name ?? '-'}</p>
+                <p className='text-xs uppercase text-black/60'>
+                  Huidige slagman
+                </p>
+                <p className='text-2xl font-bold'>
+                  {currentBatter?.name ?? '-'}
+                </p>
               </div>
 
               <div className='mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4'>
@@ -278,15 +289,21 @@ export default function ScorePage() {
                 </div>
                 <div className='rounded-lg border border-black/10 px-3 py-2'>
                   <p className='text-xs uppercase text-black/60'>Opp runs</p>
-                  <p className='text-lg font-bold'>{currentHalfFieldingStats.runs}</p>
+                  <p className='text-lg font-bold'>
+                    {currentHalfFieldingStats.runs}
+                  </p>
                 </div>
                 <div className='rounded-lg border border-black/10 px-3 py-2'>
                   <p className='text-xs uppercase text-black/60'>Opp hits</p>
-                  <p className='text-lg font-bold'>{currentHalfFieldingStats.hits}</p>
+                  <p className='text-lg font-bold'>
+                    {currentHalfFieldingStats.hits}
+                  </p>
                 </div>
                 <div className='rounded-lg border border-black/10 px-3 py-2'>
                   <p className='text-xs uppercase text-black/60'>Onze errors</p>
-                  <p className='text-lg font-bold'>{currentHalfFieldingStats.errors}</p>
+                  <p className='text-lg font-bold'>
+                    {currentHalfFieldingStats.errors}
+                  </p>
                 </div>
               </div>
             </div>
@@ -514,20 +531,30 @@ export default function ScorePage() {
             </p>
             <div className='mt-3 grid grid-cols-2 gap-2 text-sm'>
               <div className='rounded-lg bg-white px-3 py-2'>
-                <p className='text-xs uppercase text-black/60'>Opp runs totaal</p>
+                <p className='text-xs uppercase text-black/60'>
+                  Opp runs totaal
+                </p>
                 <p className='text-lg font-bold'>{inningValues.opponentRuns}</p>
               </div>
               <div className='rounded-lg bg-white px-3 py-2'>
-                <p className='text-xs uppercase text-black/60'>Opp hits totaal</p>
+                <p className='text-xs uppercase text-black/60'>
+                  Opp hits totaal
+                </p>
                 <p className='text-lg font-bold'>{inningValues.opponentHits}</p>
               </div>
               <div className='rounded-lg bg-white px-3 py-2'>
-                <p className='text-xs uppercase text-black/60'>Onze errors totaal</p>
+                <p className='text-xs uppercase text-black/60'>
+                  Onze errors totaal
+                </p>
                 <p className='text-lg font-bold'>{inningValues.errors}</p>
               </div>
               <div className='rounded-lg bg-white px-3 py-2'>
-                <p className='text-xs uppercase text-black/60'>Opp errors totaal</p>
-                <p className='text-lg font-bold'>{inningValues.opponentErrors}</p>
+                <p className='text-xs uppercase text-black/60'>
+                  Opp errors totaal
+                </p>
+                <p className='text-lg font-bold'>
+                  {inningValues.opponentErrors}
+                </p>
               </div>
             </div>
             <div className='mt-3 flex flex-col gap-2'>

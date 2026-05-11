@@ -105,12 +105,14 @@ export default function AgendaDetailPage() {
                 onClick={() => {
                   if (
                     typeof window !== 'undefined' &&
-                    !window.confirm('Weet je zeker dat je deze wedstrijd wilt verwijderen?')
+                    !window.confirm(
+                      'Weet je zeker dat je deze wedstrijd wilt verwijderen?',
+                    )
                   ) {
                     return;
                   }
                   deleteMatch(event.id);
-                  router.push('/agenda?deleted=1');
+                  router.push('/agenda');
                 }}
                 type='button'
               >

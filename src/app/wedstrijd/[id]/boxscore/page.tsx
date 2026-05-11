@@ -28,7 +28,8 @@ export default function BoxScorePage() {
     [snapshot],
   );
   const gamePlays = useMemo(
-    () => snapshot.plays.filter((play) => play.gameId === gameId && !play.voided),
+    () =>
+      snapshot.plays.filter((play) => play.gameId === gameId && !play.voided),
     [gameId, snapshot.plays],
   );
 

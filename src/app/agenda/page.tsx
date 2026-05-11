@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
@@ -19,8 +18,6 @@ const eventTypes: EventType[] = [
 ];
 
 export default function AgendaPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const team = useActiveTeam();
   const events = useAppStore((state) => state.events);
   const games = useAppStore((state) => state.games);
@@ -33,16 +30,10 @@ export default function AgendaPage() {
   const [location, setLocation] = useState('');
   const [opponent, setOpponent] = useState('');
   const [notes, setNotes] = useState('');
-  const [matchFilter, setMatchFilter] = useState<'all' | 'played' | 'not-played'>(
-    'all',
-  );
+  const [matchFilter, setMatchFilter] = useState<
+    'all' | 'played' | 'not-played'
+  >('all');
   const [toastMessage, setToastMessage] = useState('');
-  const showDeletedFromQuery = searchParams.get('deleted') === '1';
-
-  useEffect(() => {
-    if (!showDeletedFromQuery) return;
-    router.replace('/agenda');
-  }, [router, showDeletedFromQuery]);
 
   useEffect(() => {
     if (!toastMessage) return;
@@ -101,9 +92,9 @@ export default function AgendaPage() {
 
   return (
     <AppShell title='Agenda'>
-      {toastMessage || showDeletedFromQuery ? (
+      {toastMessage ? (
         <div className='mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800'>
-          {toastMessage || 'Wedstrijd verwijderd.'}
+          {toastMessage}
         </div>
       ) : null}
       <section className='grid gap-4 md:grid-cols-[320px_1fr]'>
@@ -258,7 +249,9 @@ export default function AgendaPage() {
                       onClick={() => {
                         if (
                           typeof window !== 'undefined' &&
-                          !window.confirm('Weet je zeker dat je deze wedstrijd wilt verwijderen?')
+                          !window.confirm(
+                            'Weet je zeker dat je deze wedstrijd wilt verwijderen?',
+                          )
                         ) {
                           return;
                         }
