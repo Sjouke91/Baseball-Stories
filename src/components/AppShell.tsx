@@ -91,7 +91,7 @@ export function AppShell({
 
   return (
     <div className='min-h-screen'>
-      <header className='sticky top-0 z-10 border-b border-white/15 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white shadow-xl backdrop-blur-md'>
+      <header className='sticky top-0 z-10 border-b border-white/15 bg-linear-to-r from-slate-950 via-slate-900 to-blue-950 text-white shadow-xl backdrop-blur-md'>
         <div className='mx-auto flex w-full max-w-6xl flex-wrap items-center gap-3 px-4 py-3'>
           <div>
             <p className='text-xs uppercase tracking-[0.24em] text-amber-200/80'>
@@ -135,12 +135,6 @@ export function AppShell({
               href='/agenda'
             >
               Agenda
-            </Link>
-            <Link
-              className='rounded-full border border-white/20 bg-white/10 px-3 py-1.5 font-semibold text-white hover:-translate-y-0.5 hover:bg-white/20'
-              href='/stats'
-            >
-              Stats
             </Link>
           </nav>
         </div>
