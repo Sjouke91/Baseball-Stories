@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { AppShell } from '@/components/AppShell';
+import { Modal } from '@/components/Modal';
 import { getEventGame, isMatchEventType, sortedEvents } from '@/lib/selectors';
 import { useActiveTeam, useAppStore } from '@/stores/useAppStore';
 import type { EventType } from '@/types/models';
@@ -37,6 +38,8 @@ export default function AgendaPage() {
     'all' | 'played' | 'not-played'
   >('all');
   const [toastMessage, setToastMessage] = useState('');
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (!toastMessage) return;
@@ -85,6 +88,17 @@ export default function AgendaPage() {
     return filteredByType;
   }, [activityTypeFilter, matchFilter, activityTimeline]);
 
+  const pageSize = 5;
+  const totalItems = filteredActivityTimeline.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(page, totalPages);
+
+  const paginatedActivities = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    const end = start + pageSize;
+    return filteredActivityTimeline.slice(start, end);
+  }, [filteredActivityTimeline, safePage]);
+
   const matchStatusFilterDisabled = activityTypeFilter === 'trainings';
 
   const onSubmit = (event: FormEvent) => {
@@ -103,6 +117,7 @@ export default function AgendaPage() {
     setLocation('');
     setOpponent('');
     setNotes('');
+    setShowEventModal(false);
   };
 
   return (
@@ -112,150 +127,114 @@ export default function AgendaPage() {
           {toastMessage}
         </div>
       ) : null}
-      <section className='grid gap-4 md:grid-cols-[320px_1fr]'>
-        <article className='rounded-2xl border border-black/10 bg-card p-4'>
-          <h2 className='text-lg font-bold'>Activiteit toevoegen</h2>
-          <form className='mt-3 grid gap-2' onSubmit={onSubmit}>
-            <select
-              className='rounded-lg border border-black/15 bg-white px-3 py-2'
-              value={type}
-              onChange={(event) => setType(event.target.value as EventType)}
-            >
-              {eventTypes.map((entry) => (
-                <option key={entry} value={entry}>
-                  {entry}
-                </option>
-              ))}
-            </select>
-            <input
-              className='rounded-lg border border-black/15 bg-white px-3 py-2'
-              type='date'
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-            />
-            <input
-              className='rounded-lg border border-black/15 bg-white px-3 py-2'
-              type='time'
-              value={time}
-              onChange={(event) => setTime(event.target.value)}
-            />
-            <input
-              className='rounded-lg border border-black/15 bg-white px-3 py-2'
-              placeholder='Locatie'
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-            />
-            <input
-              className='rounded-lg border border-black/15 bg-white px-3 py-2'
-              placeholder='Tegenstander (bij wedstrijd)'
-              value={opponent}
-              onChange={(event) => setOpponent(event.target.value)}
-            />
-            <textarea
-              className='rounded-lg border border-black/15 bg-white px-3 py-2'
-              placeholder='Notities'
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-            />
-            <button
-              className='rounded-lg bg-accent px-3 py-2 font-semibold text-white'
-              type='submit'
-            >
-              Toevoegen
-            </button>
-          </form>
-        </article>
+      <section className='mb-4 flex items-center justify-between gap-3 rounded-2xl border border-black/10 bg-card p-4'>
+        <div>
+          <h2 className='text-lg font-bold'>Activiteiten</h2>
+          <p className='text-sm text-black/70'>
+            Beheer de tijdlijn en voeg snel een nieuwe activiteit toe.
+          </p>
+        </div>
+        <button
+          className='inline-flex items-center gap-2 rounded-lg bg-accent px-3 py-2 font-semibold text-white'
+          onClick={() => setShowEventModal(true)}
+          type='button'
+        >
+          <span aria-hidden='true' className='text-lg leading-none'>
+            +
+          </span>
+          <span>Nieuwe activiteit</span>
+        </button>
+      </section>
 
+      <section>
         <article className='rounded-2xl border border-black/10 bg-card p-4'>
-          <h2 className='text-lg font-bold'>Activiteiten tijdlijn</h2>
-          <div className='mt-3 flex flex-wrap gap-2'>
-            <button
-              className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
-                activityTypeFilter === 'all'
-                  ? 'bg-accent text-white'
-                  : 'border border-black/15 bg-white'
-              }`}
-              onClick={() => setActivityTypeFilter('all')}
-              type='button'
-            >
-              Alles
-            </button>
-            <button
-              className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
-                activityTypeFilter === 'matches'
-                  ? 'bg-accent text-white'
-                  : 'border border-black/15 bg-white'
-              }`}
-              onClick={() => setActivityTypeFilter('matches')}
-              type='button'
-            >
-              Wedstrijden
-            </button>
-            <button
-              className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
-                activityTypeFilter === 'trainings'
-                  ? 'bg-accent text-white'
-                  : 'border border-black/15 bg-white'
-              }`}
-              onClick={() => {
-                setActivityTypeFilter('trainings');
-                setMatchFilter('all');
-              }}
-              type='button'
-            >
-              Trainingen
-            </button>
-          </div>
-          <div className='mt-3 flex flex-wrap gap-2'>
-            <button
-              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-opacity ${
-                matchFilter === 'all'
-                  ? 'bg-accent text-white'
-                  : 'border border-black/15 bg-white'
-              } ${matchStatusFilterDisabled ? 'cursor-not-allowed opacity-50' : ''}`}
-              onClick={() => setMatchFilter('all')}
-              disabled={matchStatusFilterDisabled}
-              type='button'
-            >
-              Alles
-            </button>
-            <button
-              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-opacity ${
-                matchFilter === 'not-played'
-                  ? 'bg-accent text-white'
-                  : 'border border-black/15 bg-white'
-              } ${matchStatusFilterDisabled ? 'cursor-not-allowed opacity-50' : ''}`}
-              onClick={() => setMatchFilter('not-played')}
-              disabled={matchStatusFilterDisabled}
-              type='button'
-            >
-              Niet gespeeld
-            </button>
-            <button
-              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-opacity ${
-                matchFilter === 'played'
-                  ? 'bg-accent text-white'
-                  : 'border border-black/15 bg-white'
-              } ${matchStatusFilterDisabled ? 'cursor-not-allowed opacity-50' : ''}`}
-              onClick={() => setMatchFilter('played')}
-              disabled={matchStatusFilterDisabled}
-              type='button'
-            >
-              Gespeeld
-            </button>
+          <div className='flex flex-wrap items-end justify-between gap-3'>
+            <h2 className='text-lg font-bold'>Activiteiten tijdlijn</h2>
+            <div className='flex items-end gap-2'>
+              <div className='grid gap-1'>
+                <label
+                  className='text-xs font-semibold uppercase tracking-wide text-black/60'
+                  htmlFor='activity-type-filter'
+                >
+                  Type
+                </label>
+                <select
+                  id='activity-type-filter'
+                  className='h-9 w-40 rounded-lg border border-black/15 bg-white px-2 py-1 text-sm font-semibold'
+                  value={activityTypeFilter}
+                  onChange={(event) => {
+                    const next = event.target.value as
+                      | 'all'
+                      | 'matches'
+                      | 'trainings';
+                    setActivityTypeFilter(next);
+                    setPage(1);
+                    if (next === 'trainings') {
+                      setMatchFilter('all');
+                    }
+                  }}
+                >
+                  <option value='all'>Alles</option>
+                  <option value='matches'>Wedstrijden</option>
+                  <option value='trainings'>Trainingen</option>
+                </select>
+              </div>
+
+              <div className='grid gap-1'>
+                <label
+                  className='text-xs font-semibold uppercase tracking-wide text-black/60'
+                  htmlFor='match-status-filter'
+                >
+                  Status
+                </label>
+                <select
+                  id='match-status-filter'
+                  className={`h-9 w-40 rounded-lg border border-black/15 bg-white px-2 py-1 text-sm font-semibold ${
+                    matchStatusFilterDisabled ? 'cursor-not-allowed opacity-50' : ''
+                  }`}
+                  disabled={matchStatusFilterDisabled}
+                  value={matchFilter}
+                  onChange={(event) =>
+                    {
+                      setMatchFilter(
+                        event.target.value as 'all' | 'played' | 'not-played',
+                      );
+                      setPage(1);
+                    }
+                  }
+                >
+                  <option value='all'>Alles</option>
+                  <option value='not-played'>Niet gespeeld</option>
+                  <option value='played'>Gespeeld</option>
+                </select>
+              </div>
+            </div>
           </div>
           {matchStatusFilterDisabled ? (
             <p className='mt-2 text-xs text-black/60'>
               Statusfilter is alleen van toepassing op wedstrijden.
             </p>
           ) : null}
+
+          {totalItems > 0 ? (
+            <div className='mt-2 flex items-center justify-between text-xs text-black/60'>
+              <p>
+                Toon {(safePage - 1) * pageSize + 1}-
+                {Math.min(safePage * pageSize, totalItems)} van {totalItems}
+              </p>
+              <p>
+                Pagina {safePage} / {totalPages}
+              </p>
+            </div>
+          ) : null}
+
           <div className='mt-3 grid gap-2'>
-            {filteredActivityTimeline.length === 0 ? (
+            {totalItems === 0 ? (
               <p className='text-sm text-black/70'>
                 Geen activiteiten voor dit filter.
               </p>
             ) : (
-              filteredActivityTimeline.map(
+              paginatedActivities.map(
                 ({ event, game, played, isMatch }) => (
                   <div
                     key={event.id}
@@ -334,8 +313,104 @@ export default function AgendaPage() {
               )
             )}
           </div>
+
+          {totalItems > pageSize ? (
+            <div className='mt-4 flex items-center justify-end gap-2'>
+              <button
+                className='rounded-lg border border-black/15 bg-white px-3 py-1.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50'
+                disabled={safePage <= 1}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                type='button'
+              >
+                Vorige
+              </button>
+              {Array.from({ length: totalPages }).map((_, index) => {
+                const pageNumber = index + 1;
+                return (
+                  <button
+                    key={pageNumber}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
+                      safePage === pageNumber
+                        ? 'bg-accent text-white'
+                        : 'border border-black/15 bg-white'
+                    }`}
+                    onClick={() => setPage(pageNumber)}
+                    type='button'
+                  >
+                    {pageNumber}
+                  </button>
+                );
+              })}
+              <button
+                className='rounded-lg border border-black/15 bg-white px-3 py-1.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50'
+                disabled={safePage >= totalPages}
+                onClick={() =>
+                  setPage((current) => Math.min(totalPages, current + 1))
+                }
+                type='button'
+              >
+                Volgende
+              </button>
+            </div>
+          ) : null}
         </article>
       </section>
+
+      <Modal
+        open={showEventModal}
+        title='Activiteit toevoegen'
+        onClose={() => setShowEventModal(false)}
+      >
+        <form className='grid gap-2' onSubmit={onSubmit}>
+          <select
+            className='rounded-lg border border-black/15 bg-white px-3 py-2'
+            value={type}
+            onChange={(event) => setType(event.target.value as EventType)}
+          >
+            {eventTypes.map((entry) => (
+              <option key={entry} value={entry}>
+                {entry}
+              </option>
+            ))}
+          </select>
+          <input
+            className='rounded-lg border border-black/15 bg-white px-3 py-2'
+            type='date'
+            value={date}
+            onChange={(event) => setDate(event.target.value)}
+          />
+          <input
+            className='rounded-lg border border-black/15 bg-white px-3 py-2'
+            type='time'
+            value={time}
+            onChange={(event) => setTime(event.target.value)}
+          />
+          <input
+            className='rounded-lg border border-black/15 bg-white px-3 py-2'
+            placeholder='Locatie'
+            value={location}
+            onChange={(event) => setLocation(event.target.value)}
+          />
+          <input
+            className='rounded-lg border border-black/15 bg-white px-3 py-2'
+            placeholder='Tegenstander (bij wedstrijd)'
+            value={opponent}
+            onChange={(event) => setOpponent(event.target.value)}
+          />
+          <textarea
+            className='rounded-lg border border-black/15 bg-white px-3 py-2'
+            placeholder='Notities'
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+          />
+          <button
+            className='rounded-lg bg-accent px-3 py-2 font-semibold text-white'
+            type='submit'
+          >
+            Toevoegen
+          </button>
+        </form>
+      </Modal>
     </AppShell>
   );
 }

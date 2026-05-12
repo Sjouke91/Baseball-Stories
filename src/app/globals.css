@@ -56,6 +56,10 @@ textarea {
     opacity 160ms ease;
 }
 
+button {
+  cursor: pointer;
+}
+
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,

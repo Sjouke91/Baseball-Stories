@@ -209,6 +209,11 @@ interface AppState extends AppData {
   online: boolean;
   applyRemoteSnapshot: (snapshot: Partial<AppData>) => void;
   createTeam: (name: string, season: string) => void;
+  updateTeam: (
+    id: string,
+    patch: Partial<Pick<Team, 'name' | 'season'>>,
+  ) => void;
+  setActiveTeam: (teamId: string) => void;
   addPlayer: (input: {
     name: string;
     number?: number;
@@ -248,6 +253,7 @@ interface AppState extends AppData {
     outsOnPlay?: number;
     rbi?: number;
     notes?: string;
+    fieldingPlay?: string;
   }) => void;
   recordRunnerAction: (input: {
     gameId: string;
@@ -338,6 +344,22 @@ export const useAppStore = create<AppState>()(
           teams: [...state.teams, team],
           activeTeamId: state.activeTeamId ?? team.id,
         }));
+      },
+      updateTeam: (id, patch) => {
+        set((state) => ({
+          teams: state.teams.map((team) =>
+            team.id === id ? { ...team, ...patch } : team,
+          ),
+        }));
+      },
+      setActiveTeam: (teamId) => {
+        set((state) => {
+          const exists = state.teams.some((team) => team.id === teamId);
+          if (!exists) return {};
+          return {
+            activeTeamId: teamId,
+          };
+        });
       },
       addPlayer: ({ name, number, positions }) => {
         const { activeTeamId, teams } = get();
@@ -539,7 +561,15 @@ export const useAppStore = create<AppState>()(
           };
         });
       },
-      recordPlay: ({ gameId, result, pitcherId, outsOnPlay, rbi, notes }) => {
+      recordPlay: ({
+        gameId,
+        result,
+        pitcherId,
+        outsOnPlay,
+        rbi,
+        notes,
+        fieldingPlay,
+      }) => {
         const state = get();
         const lineup = state.lineups
           .filter((entry) => entry.gameId === gameId)
@@ -679,6 +709,7 @@ export const useAppStore = create<AppState>()(
           rbi: calculatedRbi,
           runsScored,
           outsOnPlay: outs,
+          fieldingPlay,
           notes,
           voided: false,
           syncStatus: 'pending',

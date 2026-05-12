@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppShell } from '@/components/AppShell';
+import { Modal } from '@/components/Modal';
 import { useAppStore } from '@/stores/useAppStore';
 import type { AttendanceStatus } from '@/types/models';
 
@@ -30,6 +31,7 @@ export default function AgendaDetailPage() {
 
   const event = events.find((entry) => entry.id === id);
   const isMatchEvent = event?.type.includes('wedstrijd') ?? false;
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const gameId = useMemo(() => {
     if (!event || !event.type.includes('wedstrijd')) return undefined;
@@ -102,18 +104,7 @@ export default function AgendaDetailPage() {
             {isMatchEvent ? (
               <button
                 className='rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50'
-                onClick={() => {
-                  if (
-                    typeof window !== 'undefined' &&
-                    !window.confirm(
-                      'Weet je zeker dat je deze wedstrijd wilt verwijderen?',
-                    )
-                  ) {
-                    return;
-                  }
-                  deleteMatch(event.id);
-                  router.push('/agenda');
-                }}
+                onClick={() => setShowDeleteConfirm(true)}
                 type='button'
               >
                 Wedstrijd verwijderen
@@ -160,6 +151,38 @@ export default function AgendaDetailPage() {
           })}
         </div>
       </section>
+
+      <Modal
+        open={showDeleteConfirm}
+        title='Wedstrijd verwijderen'
+        onClose={() => setShowDeleteConfirm(false)}
+      >
+        <div className='grid gap-3'>
+          <p className='text-sm text-black/80'>
+            Weet je zeker dat je deze wedstrijd wilt verwijderen?
+          </p>
+          <div className='flex justify-end gap-2'>
+            <button
+              className='rounded-lg border border-black/15 bg-white px-3 py-2 text-sm font-semibold'
+              onClick={() => setShowDeleteConfirm(false)}
+              type='button'
+            >
+              Annuleren
+            </button>
+            <button
+              className='rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100'
+              onClick={() => {
+                deleteMatch(event.id);
+                setShowDeleteConfirm(false);
+                router.push('/agenda');
+              }}
+              type='button'
+            >
+              Verwijderen
+            </button>
+          </div>
+        </div>
+      </Modal>
     </AppShell>
   );
 }
