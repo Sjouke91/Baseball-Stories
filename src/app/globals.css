@@ -1,13 +1,13 @@
 @import 'tailwindcss';
 
 :root {
-  --background: #e7e1d4;
-  --foreground: #131a23;
-  --card: #fffdf7;
-  --muted: #d9d1bf;
-  --accent: #b8261d;
-  --accent-2: #0f3b57;
-  --warning: #c7881a;
+  --background: #f1ead7;
+  --foreground: #132033;
+  --card: #fffaf0;
+  --muted: #e4d8bc;
+  --accent: #a92c1a;
+  --accent-2: #103f67;
+  --warning: #be8a1c;
 }
 
 @theme inline {
@@ -24,10 +24,10 @@
 
 body {
   background-image:
-    radial-gradient(circle at 12% -10%, #ffffffd0 0%, transparent 34%),
-    radial-gradient(circle at 92% 3%, #c4d7e899 0%, transparent 38%),
-    radial-gradient(circle at 55% 100%, #9f9a8a4d 0%, transparent 32%),
-    linear-gradient(135deg, #efe9dd 0%, #ddd5c2 100%);
+    radial-gradient(circle at 15% -12%, #ffffff 0%, transparent 36%),
+    radial-gradient(circle at 88% 2%, #b9d2ebad 0%, transparent 40%),
+    radial-gradient(circle at 52% 100%, #987f4f38 0%, transparent 34%),
+    linear-gradient(135deg, #f6efdd 0%, #e2d6bc 100%);
   background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-body), sans-serif;
@@ -72,6 +72,6 @@ textarea:focus-visible {
 section.rounded-2xl,
 article.rounded-2xl {
   box-shadow:
-    0 12px 24px -18px #1a243366,
-    0 2px 2px #1a24331a;
+    0 16px 28px -20px #1a2c3f52,
+    0 2px 2px #1a24331f;
 }
