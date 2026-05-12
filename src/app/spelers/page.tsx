@@ -203,7 +203,10 @@ export default function PlayersPage() {
                       if (!stats) return null;
 
                       return (
-                        <tr key={player.id} className='border-t border-black/10'>
+                        <tr
+                          key={player.id}
+                          className='border-t border-black/10'
+                        >
                           <td className='py-2 font-medium'>
                             <Link
                               className='underline decoration-dotted'
@@ -281,8 +284,9 @@ export default function PlayersPage() {
             <div className='rounded-lg border border-black/10 bg-white p-3'>
               <p className='text-sm font-semibold'>Hitting</p>
               <p className='text-sm text-black/80'>
-                AB {selectedPlayerStats.hitting.ab} · H {selectedPlayerStats.hitting.h} ·
-                BB {selectedPlayerStats.hitting.bb}
+                AB {selectedPlayerStats.hitting.ab} · H{' '}
+                {selectedPlayerStats.hitting.h} · BB{' '}
+                {selectedPlayerStats.hitting.bb}
               </p>
               <p className='text-sm text-black/80'>
                 AVG {toFixed3(selectedPlayerStats.hitting.avg)} · OBP{' '}
@@ -296,7 +300,8 @@ export default function PlayersPage() {
               <p className='text-sm font-semibold'>Pitching</p>
               <p className='text-sm text-black/80'>
                 IP {selectedPlayerStats.pitching.ip.toFixed(1)} · K{' '}
-                {selectedPlayerStats.pitching.k} · BB {selectedPlayerStats.pitching.bb}
+                {selectedPlayerStats.pitching.k} · BB{' '}
+                {selectedPlayerStats.pitching.bb}
               </p>
               <p className='text-sm text-black/80'>
                 ERA {toFixed2(selectedPlayerStats.pitching.era)} · WHIP{' '}
@@ -307,7 +312,8 @@ export default function PlayersPage() {
             <div className='rounded-lg border border-black/10 bg-white p-3'>
               <p className='text-sm font-semibold'>Fielding</p>
               <p className='text-sm text-black/80'>
-                PO {selectedPlayer.po} · A {selectedPlayer.a} · E {selectedPlayer.e}
+                PO {selectedPlayer.po} · A {selectedPlayer.a} · E{' '}
+                {selectedPlayer.e}
               </p>
               <p className='text-sm text-black/80'>
                 TC {selectedPlayerStats.fielding.tc} · FLD%{' '}

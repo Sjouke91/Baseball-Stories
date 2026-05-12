@@ -154,7 +154,10 @@ export function AppShell({
       >
         <div className='grid gap-4'>
           <div className='grid gap-2'>
-            <label className='text-sm font-semibold' htmlFor='team-settings-select'>
+            <label
+              className='text-sm font-semibold'
+              htmlFor='team-settings-select'
+            >
               Actief team
             </label>
             <select
@@ -175,7 +178,11 @@ export function AppShell({
           </div>
 
           {team ? (
-            <form key={team.id} className='grid gap-2' onSubmit={handleSaveTeam}>
+            <form
+              key={team.id}
+              className='grid gap-2'
+              onSubmit={handleSaveTeam}
+            >
               <input
                 className='rounded-lg border border-black/15 bg-white px-3 py-2'
                 defaultValue={team.name}
@@ -200,7 +207,8 @@ export function AppShell({
           )}
 
           <div className='rounded-lg border border-black/10 bg-muted p-3 text-sm text-black/70'>
-            Spelers: {activeTeamStats.playerCount} · Activiteiten: {activeTeamStats.eventCount}
+            Spelers: {activeTeamStats.playerCount} · Activiteiten:{' '}
+            {activeTeamStats.eventCount}
           </div>
 
           {settingsStatus ? (

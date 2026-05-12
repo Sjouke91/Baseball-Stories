@@ -237,9 +237,15 @@ export default function HomePage() {
 
   const activityTilesPerSlide = 3;
   const activityPages = useMemo(() => {
-    const pages: typeof upcomingActivities[] = [];
-    for (let index = 0; index < upcomingActivities.length; index += activityTilesPerSlide) {
-      pages.push(upcomingActivities.slice(index, index + activityTilesPerSlide));
+    const pages: (typeof upcomingActivities)[] = [];
+    for (
+      let index = 0;
+      index < upcomingActivities.length;
+      index += activityTilesPerSlide
+    ) {
+      pages.push(
+        upcomingActivities.slice(index, index + activityTilesPerSlide),
+      );
     }
     return pages;
   }, [upcomingActivities]);
@@ -477,7 +483,9 @@ export default function HomePage() {
               <div className='overflow-hidden'>
                 <div
                   className='flex transition-transform duration-500 ease-out'
-                  style={{ transform: `translateX(-${safeActivitySlide * 100}%)` }}
+                  style={{
+                    transform: `translateX(-${safeActivitySlide * 100}%)`,
+                  }}
                 >
                   {activityPages.map((page, pageIndex) => (
                     <div key={pageIndex} className='w-full flex-none'>
@@ -504,9 +512,13 @@ export default function HomePage() {
                                 {activity.type}
                               </p>
                               <p className='text-lg font-semibold'>
-                                {format(new Date(activity.date), 'EEEE d MMMM', {
-                                  locale: nl,
-                                })}
+                                {format(
+                                  new Date(activity.date),
+                                  'EEEE d MMMM',
+                                  {
+                                    locale: nl,
+                                  },
+                                )}
                               </p>
                               <p className='text-sm text-black/70'>
                                 {activity.time ?? 'Tijd onbekend'} ·{' '}
@@ -518,7 +530,8 @@ export default function HomePage() {
                                   : 'Tegenstander onbekend'}
                               </p>
                               <p className='mt-1 text-sm text-black/70'>
-                                Aanwezig: {presentCount} · Afwezig: {absentCount}
+                                Aanwezig: {presentCount} · Afwezig:{' '}
+                                {absentCount}
                               </p>
                               <div className='mt-3 flex flex-wrap gap-2'>
                                 <Link

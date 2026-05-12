@@ -190,18 +190,18 @@ export default function AgendaPage() {
                 <select
                   id='match-status-filter'
                   className={`h-9 w-40 rounded-lg border border-black/15 bg-white px-2 py-1 text-sm font-semibold ${
-                    matchStatusFilterDisabled ? 'cursor-not-allowed opacity-50' : ''
+                    matchStatusFilterDisabled
+                      ? 'cursor-not-allowed opacity-50'
+                      : ''
                   }`}
                   disabled={matchStatusFilterDisabled}
                   value={matchFilter}
-                  onChange={(event) =>
-                    {
-                      setMatchFilter(
-                        event.target.value as 'all' | 'played' | 'not-played',
-                      );
-                      setPage(1);
-                    }
-                  }
+                  onChange={(event) => {
+                    setMatchFilter(
+                      event.target.value as 'all' | 'played' | 'not-played',
+                    );
+                    setPage(1);
+                  }}
                 >
                   <option value='all'>Alles</option>
                   <option value='not-played'>Niet gespeeld</option>
@@ -234,83 +234,81 @@ export default function AgendaPage() {
                 Geen activiteiten voor dit filter.
               </p>
             ) : (
-              paginatedActivities.map(
-                ({ event, game, played, isMatch }) => (
-                  <div
-                    key={event.id}
-                    className='rounded-lg border border-black/10 bg-white p-3'
-                  >
-                    <div className='flex items-start justify-between gap-3'>
-                      <div>
-                        <p className='text-xs uppercase tracking-wide text-black/60'>
-                          {event.type}
-                        </p>
-                        <p className='font-semibold'>
-                          {format(new Date(event.date), 'EEEE d MMMM', {
-                            locale: nl,
-                          })}
-                        </p>
-                        <p className='text-sm text-black/70'>
-                          {event.time ?? 'Tijd onbekend'} ·{' '}
-                          {event.location ?? 'Locatie onbekend'}
-                        </p>
-                        <p className='mt-1 text-sm text-black/70'>
-                          {event.opponent
-                            ? `vs ${event.opponent}`
-                            : 'Tegenstander onbekend'}
-                        </p>
-                      </div>
-                      <span
-                        className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                          played
-                            ? 'bg-black/10 text-black/70'
-                            : 'bg-emerald-100 text-emerald-800'
-                        }`}
-                      >
-                        {isMatch
-                          ? played
-                            ? 'gespeeld'
-                            : 'niet gespeeld'
-                          : 'training'}
-                      </span>
+              paginatedActivities.map(({ event, game, played, isMatch }) => (
+                <div
+                  key={event.id}
+                  className='rounded-lg border border-black/10 bg-white p-3'
+                >
+                  <div className='flex items-start justify-between gap-3'>
+                    <div>
+                      <p className='text-xs uppercase tracking-wide text-black/60'>
+                        {event.type}
+                      </p>
+                      <p className='font-semibold'>
+                        {format(new Date(event.date), 'EEEE d MMMM', {
+                          locale: nl,
+                        })}
+                      </p>
+                      <p className='text-sm text-black/70'>
+                        {event.time ?? 'Tijd onbekend'} ·{' '}
+                        {event.location ?? 'Locatie onbekend'}
+                      </p>
+                      <p className='mt-1 text-sm text-black/70'>
+                        {event.opponent
+                          ? `vs ${event.opponent}`
+                          : 'Tegenstander onbekend'}
+                      </p>
                     </div>
-                    <div className='mt-3 flex flex-wrap gap-2'>
-                      <Link
-                        className='rounded-lg border border-black/15 px-3 py-1.5 text-sm font-semibold hover:bg-muted'
-                        href={`/agenda/${event.id}`}
-                      >
-                        Open activiteit
-                      </Link>
-                      {game ? (
-                        <Link
-                          className='rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white'
-                          href={`/wedstrijd/${game.id}`}
-                        >
-                          Open wedstrijd
-                        </Link>
-                      ) : null}
-                      <button
-                        className='rounded-lg border border-red-300 px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50'
-                        onClick={() => {
-                          if (
-                            typeof window !== 'undefined' &&
-                            !window.confirm(
-                              'Weet je zeker dat je deze activiteit wilt verwijderen?',
-                            )
-                          ) {
-                            return;
-                          }
-                          deleteMatch(event.id);
-                          setToastMessage('Activiteit verwijderd.');
-                        }}
-                        type='button'
-                      >
-                        Verwijderen
-                      </button>
-                    </div>
+                    <span
+                      className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                        played
+                          ? 'bg-black/10 text-black/70'
+                          : 'bg-emerald-100 text-emerald-800'
+                      }`}
+                    >
+                      {isMatch
+                        ? played
+                          ? 'gespeeld'
+                          : 'niet gespeeld'
+                        : 'training'}
+                    </span>
                   </div>
-                ),
-              )
+                  <div className='mt-3 flex flex-wrap gap-2'>
+                    <Link
+                      className='rounded-lg border border-black/15 px-3 py-1.5 text-sm font-semibold hover:bg-muted'
+                      href={`/agenda/${event.id}`}
+                    >
+                      Open activiteit
+                    </Link>
+                    {game ? (
+                      <Link
+                        className='rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white'
+                        href={`/wedstrijd/${game.id}`}
+                      >
+                        Open wedstrijd
+                      </Link>
+                    ) : null}
+                    <button
+                      className='rounded-lg border border-red-300 px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50'
+                      onClick={() => {
+                        if (
+                          typeof window !== 'undefined' &&
+                          !window.confirm(
+                            'Weet je zeker dat je deze activiteit wilt verwijderen?',
+                          )
+                        ) {
+                          return;
+                        }
+                        deleteMatch(event.id);
+                        setToastMessage('Activiteit verwijderd.');
+                      }}
+                      type='button'
+                    >
+                      Verwijderen
+                    </button>
+                  </div>
+                </div>
+              ))
             )}
           </div>
 
