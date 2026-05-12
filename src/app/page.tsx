@@ -12,16 +12,25 @@ export default function HomePage() {
   const team = useActiveTeam();
   const events = useAppStore((state) => state.events);
   const games = useAppStore((state) => state.games);
+  const attendance = useAppStore((state) => state.attendance);
   const createTeam = useAppStore((state) => state.createTeam);
 
   const [name, setName] = useState('');
   const [season, setSeason] = useState(String(new Date().getFullYear()));
 
-  const upcomingMatches = useMemo(() => {
+  const upcomingActivities = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
     const list = sortedEvents({ events });
     return list.filter((event) => {
       if (event.teamId !== team?.id) return false;
-      if (!isMatchEventType(event.type)) return false;
+      const isTraining = event.type === 'training';
+      const isMatch = isMatchEventType(event.type);
+      if (!isTraining && !isMatch) return false;
+
+      if (isTraining) {
+        return event.date >= today;
+      }
+
       const game = getEventGame({ games }, event.id);
       return game?.status !== 'klaar';
     });
@@ -73,14 +82,22 @@ export default function HomePage() {
         </article>
 
         <article className='rounded-2xl border border-black/10 bg-card p-5 shadow-sm'>
-          <h2 className='text-xl font-bold'>Wedstrijd tijdlijn</h2>
+          <h2 className='text-xl font-bold'>Activiteiten tijdlijn</h2>
           <p className='mt-1 text-sm text-black/70'>
-            Alleen wedstrijden die nog niet gespeeld zijn.
+            Aankomende trainingen en wedstrijden die nog niet gespeeld zijn.
           </p>
-          {upcomingMatches.length ? (
+          {upcomingActivities.length ? (
             <div className='mt-4 grid gap-2'>
-              {upcomingMatches.map((event) => {
+              {upcomingActivities.map((event) => {
                 const game = getEventGame({ games }, event.id);
+                const presentCount = attendance.filter(
+                  (entry) =>
+                    entry.eventId === event.id && entry.status === 'aanwezig',
+                ).length;
+                const absentCount = attendance.filter(
+                  (entry) =>
+                    entry.eventId === event.id && entry.status === 'afwezig',
+                ).length;
 
                 return (
                   <div
@@ -104,6 +121,9 @@ export default function HomePage() {
                         ? `vs ${event.opponent}`
                         : 'Tegenstander onbekend'}
                     </p>
+                    <p className='mt-1 text-sm text-black/70'>
+                      Aanwezig: {presentCount} · Afwezig: {absentCount}
+                    </p>
                     <div className='mt-3 flex flex-wrap gap-2'>
                       <Link
                         className='rounded-lg border border-black/15 px-3 py-1.5 text-sm font-semibold hover:bg-muted'
@@ -126,7 +146,7 @@ export default function HomePage() {
             </div>
           ) : (
             <p className='mt-4 text-sm text-black/70'>
-              Geen openstaande wedstrijden in de tijdlijn.
+              Geen openstaande trainingen of wedstrijden in de tijdlijn.
             </p>
           )}
           <div className='mt-4 flex flex-wrap gap-2'>
