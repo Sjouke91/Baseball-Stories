@@ -12,6 +12,9 @@ export type EventType =
   | 'teamactiviteit';
 
 export type PlayResult =
+  | 'STRIKE'
+  | 'BALL'
+  | 'IN_PLAY'
   | '1B'
   | '2B'
   | '3B'
@@ -25,10 +28,12 @@ export type PlayResult =
   | 'SAC'
   | 'SB'
   | 'CS'
+  | 'PICKOFF'
   | 'OPP_RUNS'
   | 'OPP_HIT'
   | 'OPP_ERROR'
-  | 'INNING_ADVANCE';
+  | 'INNING_ADVANCE'
+  | 'NEXT_BATTER';
 
 export type HalfInning = 'top' | 'bottom';
 
@@ -130,6 +135,8 @@ export interface LiveGameProgress {
   inning: number;
   half: HalfInning;
   outs: number;
+  balls: number;
+  strikes: number;
   battingIndex: number;
   scoreFor: number;
   scoreAgainst: number;

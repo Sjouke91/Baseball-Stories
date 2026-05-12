@@ -26,6 +26,8 @@ const blankProgress = (
   inning: 1,
   half: startingHalf,
   outs: 0,
+  balls: 0,
+  strikes: 0,
   battingIndex: 0,
   scoreFor: 0,
   scoreAgainst: 0,
@@ -39,6 +41,8 @@ const cloneSnapshot = (
   inning: progress.inning,
   half: progress.half,
   outs: progress.outs,
+  balls: progress.balls,
+  strikes: progress.strikes,
   battingIndex: progress.battingIndex,
   scoreFor: progress.scoreFor,
   scoreAgainst: progress.scoreAgainst,
@@ -58,6 +62,8 @@ const applyThreeOutRule = (progress: LiveGameProgress): LiveGameProgress => {
     inning: nextInning,
     half: nextHalf,
     outs: 0,
+    balls: 0,
+    strikes: 0,
     bases: {},
   };
 };
@@ -253,6 +259,9 @@ interface AppState extends AppData {
     fromBase: 1 | 2 | 3;
     toBase: 0 | 1 | 2 | 3 | 4;
   }) => void;
+  placeRunnerOnBase: (input: { gameId: string; base: 1 | 2 | 3 }) => void;
+  recordPickoff: (input: { gameId: string; base: 1 | 2 | 3 }) => void;
+  nextBatter: (gameId: string) => void;
   advanceInning: (gameId: string) => void;
   recordOpponentRuns: (input: { gameId: string; runs: number }) => void;
   recordOpponentHit: (gameId: string) => void;
@@ -545,7 +554,7 @@ export const useAppStore = create<AppState>()(
         const runnerEvents: RunnerEvent[] = [];
         let nextProgress: LiveGameProgress = {
           ...progress,
-          battingIndex: progress.battingIndex + 1,
+          battingIndex: progress.battingIndex,
           history: [
             ...progress.history,
             {
@@ -559,44 +568,98 @@ export const useAppStore = create<AppState>()(
         let runsScored = 0;
         let outs = outsOnPlay ?? 0;
         let calculatedRbi = rbi ?? 0;
+        let shouldAdvanceBatter = false;
+        let resetCount = false;
 
-        if (result === '1B') {
+        if (result === 'STRIKE') {
+          nextProgress.strikes = Math.min(2, progress.strikes + 1);
+        } else if (result === 'BALL') {
+          nextProgress.balls = Math.min(3, progress.balls + 1);
+        } else if (result === 'IN_PLAY') {
+          nextProgress.strikes = 0;
+          nextProgress.balls = 0;
+        } else if (result === '1B') {
           const movement = advanceForcedOneBase(progress, batter.playerId);
           runsScored = movement.runs;
           calculatedRbi = calculatedRbi || movement.runs;
           nextProgress.bases = movement.bases;
           runnerEvents.push(...movement.events);
+          shouldAdvanceBatter = true;
+          resetCount = true;
         } else if (result === '2B') {
           const movement = advanceBases(progress, batter.playerId, 2);
           runsScored = movement.runs;
           calculatedRbi = calculatedRbi || movement.runs;
           nextProgress.bases = movement.bases;
           runnerEvents.push(...movement.events);
+          shouldAdvanceBatter = true;
+          resetCount = true;
         } else if (result === '3B') {
           const movement = advanceBases(progress, batter.playerId, 3);
           runsScored = movement.runs;
           calculatedRbi = calculatedRbi || movement.runs;
           nextProgress.bases = movement.bases;
           runnerEvents.push(...movement.events);
+          shouldAdvanceBatter = true;
+          resetCount = true;
         } else if (result === 'HR') {
           const movement = advanceBases(progress, batter.playerId, 4);
           runsScored = movement.runs;
           calculatedRbi = calculatedRbi || movement.runs;
           nextProgress.bases = {};
           runnerEvents.push(...movement.events);
+          shouldAdvanceBatter = true;
+          resetCount = true;
         } else if (result === 'BB' || result === 'HBP') {
           const movement = advanceForcedOneBase(progress, batter.playerId);
           runsScored = movement.runs;
           calculatedRbi = calculatedRbi || movement.runs;
           nextProgress.bases = movement.bases;
           runnerEvents.push(...movement.events);
+          shouldAdvanceBatter = true;
+          resetCount = true;
         } else if (result === 'E' || result === 'FC') {
           const movement = advanceBases(progress, batter.playerId, 1);
           runsScored = movement.runs;
           nextProgress.bases = movement.bases;
           runnerEvents.push(...movement.events);
+          shouldAdvanceBatter = true;
+          resetCount = true;
         } else if (result === 'K' || result === 'OUT' || result === 'SAC') {
           outs = outsOnPlay ?? 1;
+          shouldAdvanceBatter = true;
+          resetCount = true;
+        } else if (result === 'PICKOFF') {
+          outs = outsOnPlay ?? 1;
+        } else if (result === 'NEXT_BATTER') {
+          shouldAdvanceBatter = true;
+          resetCount = true;
+        }
+
+        if (shouldAdvanceBatter) {
+          nextProgress.battingIndex = progress.battingIndex + 1;
+        }
+        if (resetCount) {
+          nextProgress.balls = 0;
+          nextProgress.strikes = 0;
+        }
+
+        if (result === 'STRIKE' && progress.strikes >= 2) {
+          outs = 1;
+          nextProgress.balls = 0;
+          nextProgress.strikes = 0;
+          nextProgress.battingIndex = progress.battingIndex + 1;
+        }
+
+        if (result === 'BALL' && progress.balls >= 3) {
+          const movement = advanceForcedOneBase(progress, batter.playerId);
+          runsScored = movement.runs;
+          calculatedRbi = calculatedRbi || movement.runs;
+          nextProgress.bases = movement.bases;
+          runnerEvents.push(...movement.events);
+          nextProgress.balls = 0;
+          nextProgress.strikes = 0;
+          nextProgress.battingIndex = progress.battingIndex + 1;
         }
 
         nextProgress.outs += outs;
@@ -730,6 +793,72 @@ export const useAppStore = create<AppState>()(
           },
         }));
       },
+      recordPickoff: ({ gameId, base }) => {
+        const state = get();
+        const progress = state.gameProgress[gameId] ?? blankProgress();
+        const runner =
+          base === 1
+            ? progress.bases.first
+            : base === 2
+              ? progress.bases.second
+              : progress.bases.third;
+        if (!runner) return;
+
+        const playId = uid();
+        const sequence =
+          state.plays.filter((play) => play.gameId === gameId).length + 1;
+        const nextProgress: LiveGameProgress = {
+          ...progress,
+          history: [
+            ...progress.history,
+            {
+              playId,
+              snapshot: cloneSnapshot(progress),
+            },
+          ],
+        };
+
+        if (base === 1) delete nextProgress.bases.first;
+        if (base === 2) delete nextProgress.bases.second;
+        if (base === 3) delete nextProgress.bases.third;
+        nextProgress.outs += 1;
+        Object.assign(nextProgress, applyThreeOutRule(nextProgress));
+
+        const play: Play = {
+          id: playId,
+          gameId,
+          inning: progress.inning,
+          half: progress.half,
+          sequence,
+          result: 'PICKOFF',
+          runsScored: 0,
+          rbi: 0,
+          outsOnPlay: 1,
+          notes: `Pickoff op ${base}B`,
+          voided: false,
+          syncStatus: 'pending',
+          createdAt: new Date().toISOString(),
+        };
+
+        const runnerEvent: RunnerEvent = {
+          id: uid(),
+          playId,
+          playerId: runner,
+          fromBase: base,
+          toBase: base,
+          result: 'pickoff',
+          runScored: false,
+        };
+
+        set((current) => ({
+          plays: [...current.plays, play],
+          runnerEvents: [...current.runnerEvents, runnerEvent],
+          gameProgress: {
+            ...current.gameProgress,
+            [gameId]: nextProgress,
+          },
+        }));
+      },
       moveRunner: ({ gameId, fromBase, toBase }) => {
         const state = get();
         const progress = state.gameProgress[gameId] ?? blankProgress();
@@ -830,6 +959,76 @@ export const useAppStore = create<AppState>()(
           },
         }));
       },
+      placeRunnerOnBase: ({ gameId, base }) => {
+        const state = get();
+        const lineup = state.lineups
+          .filter((entry) => entry.gameId === gameId)
+          .sort((a, b) => a.battingOrder - b.battingOrder);
+        if (lineup.length === 0) return;
+
+        const progress = state.gameProgress[gameId] ?? blankProgress();
+        const occupied =
+          (base === 1 && progress.bases.first) ||
+          (base === 2 && progress.bases.second) ||
+          (base === 3 && progress.bases.third);
+        if (occupied) return;
+
+        const batter = lineup[progress.battingIndex % lineup.length];
+        const playId = uid();
+        const sequence =
+          state.plays.filter((play) => play.gameId === gameId).length + 1;
+
+        const nextProgress: LiveGameProgress = {
+          ...progress,
+          history: [
+            ...progress.history,
+            {
+              playId,
+              snapshot: cloneSnapshot(progress),
+            },
+          ],
+        };
+
+        if (base === 1) nextProgress.bases.first = batter.playerId;
+        if (base === 2) nextProgress.bases.second = batter.playerId;
+        if (base === 3) nextProgress.bases.third = batter.playerId;
+
+        const play: Play = {
+          id: playId,
+          gameId,
+          inning: progress.inning,
+          half: progress.half,
+          sequence,
+          batterId: batter.playerId,
+          result: 'IN_PLAY',
+          runsScored: 0,
+          rbi: 0,
+          outsOnPlay: 0,
+          notes: `Handmatig loper geplaatst op ${base}B`,
+          voided: false,
+          syncStatus: 'pending',
+          createdAt: new Date().toISOString(),
+        };
+
+        const runnerEvent: RunnerEvent = {
+          id: uid(),
+          playId,
+          playerId: batter.playerId,
+          fromBase: 0,
+          toBase: base,
+          result: 'advance',
+          runScored: false,
+        };
+
+        set((current) => ({
+          plays: [...current.plays, play],
+          runnerEvents: [...current.runnerEvents, runnerEvent],
+          gameProgress: {
+            ...current.gameProgress,
+            [gameId]: nextProgress,
+          },
+        }));
+      },
       advanceInning: (gameId) => {
         const state = get();
         const progress = state.gameProgress[gameId] ?? blankProgress();
@@ -846,6 +1045,8 @@ export const useAppStore = create<AppState>()(
           inning: nextInning,
           half: nextHalf,
           outs: 0,
+          balls: 0,
+          strikes: 0,
           bases: {},
           history: [
             ...progress.history,
@@ -867,6 +1068,56 @@ export const useAppStore = create<AppState>()(
           rbi: 0,
           outsOnPlay: 0,
           notes: 'Handmatig naar volgende inning',
+          voided: false,
+          syncStatus: 'pending',
+          createdAt: new Date().toISOString(),
+        };
+
+        set((current) => ({
+          plays: [...current.plays, play],
+          gameProgress: {
+            ...current.gameProgress,
+            [gameId]: nextProgress,
+          },
+          games: current.games.map((game) =>
+            game.id === gameId && game.status === 'gepland'
+              ? { ...game, status: 'bezig' }
+              : game,
+          ),
+        }));
+      },
+      nextBatter: (gameId) => {
+        const state = get();
+        const progress = state.gameProgress[gameId] ?? blankProgress();
+        const playId = uid();
+        const sequence =
+          state.plays.filter((play) => play.gameId === gameId).length + 1;
+
+        const nextProgress: LiveGameProgress = {
+          ...progress,
+          battingIndex: progress.battingIndex + 1,
+          balls: 0,
+          strikes: 0,
+          history: [
+            ...progress.history,
+            {
+              playId,
+              snapshot: cloneSnapshot(progress),
+            },
+          ],
+        };
+
+        const play: Play = {
+          id: playId,
+          gameId,
+          inning: progress.inning,
+          half: progress.half,
+          sequence,
+          result: 'NEXT_BATTER',
+          runsScored: 0,
+          rbi: 0,
+          outsOnPlay: 0,
+          notes: 'Handmatig volgende slagman',
           voided: false,
           syncStatus: 'pending',
           createdAt: new Date().toISOString(),
